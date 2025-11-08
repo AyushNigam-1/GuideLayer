@@ -5,19 +5,36 @@
   "description": "Injects a Shepherd tour into the ChatGPT page.",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Start Shepherd Tour"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
         "https://chatgpt.com/*"
       ],
       "js": [
+        "content-trigger.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
         "lib/shepherd.min.js",
+        "lib/shepherd.min.css",
         "injector.js"
       ],
-      "css": [
-        "lib/shepherd.min.css"
+      "matches": [
+        "https://chatgpt.com/*"
       ]
     }
   ]
