@@ -1,9 +1,12 @@
 import type { PlasmoCSConfig } from "plasmo"
 import Shepherd from "shepherd.js"
-import type { Tour, StepOptions } from "shepherd.js"
+import type { Tour, StepOptions, Step } from "shepherd.js"
 import { offset } from "@floating-ui/dom"
 import type { Placement } from "@floating-ui/dom"
-import "shepherd.js/dist/css/shepherd.css" // Main CSS (includes default theme)
+import '../public/beautiful-tour.css'; // <-- Import your custom CSS
+import "../css/pro-theme.css"
+import 'shepherd.js/dist/css/shepherd.css';
+// import "shepherd.js/dist/css/shepherd.css" // Main CSS (includes default theme)
 // import "shepherd.js/dist/css/shepherd-theme-arrows.css" // Optional: Add arrows theme if needed
 
 export const config: PlasmoCSConfig = {
@@ -14,44 +17,90 @@ export const config: PlasmoCSConfig = {
 // Custom interface for step data
 interface StepData extends Partial<StepOptions> {
     id: string
-    text: string
+    text: [string] | string
     attachTo?: {
         element?: string | HTMLElement
         on?: Placement
     }
-    buttonText: string
+    buttonText?: string
 }
 
 // Data-driven steps array - easy to extend/add new steps
 const tourSteps: StepData[] = [
     {
         id: 'welcome',
-        text: 'Welcome to ChatGPT! Let\'s get you started with your first prompt.',
+        text: [
+            '<div class="custom-content-box">' +
+            '<h4>This is the custom HTML title!</h4>' +
+            '<p>The content, including <b>bold text</b>, is rendered.</p>' +
+            '<img src="[URL_TO_A_SMALL_IMAGE]" style="max-width: 100px; display: block; margin-top: 10px;"/>' +
+            '</div>'
+        ],
         attachTo: undefined, // No attachment → Shepherd auto-centers the step
-        buttonText: 'Start'
+        // buttonText: 'Start'
     },
     {
         id: 'input-prompt',
         text: 'Click here to type your message. Try: "Tell me a joke!"',
         attachTo: {
-            element: '[contenteditable="true"], textarea', // Selector string
+            element: '#prompt-textarea', // Selector string
             on: 'top'
         },
-        buttonText: 'Next'
+        // buttonText: 'Next'/
     },
     {
         id: 'submit-response',
         text: 'Hit Enter or click Send to generate a response. Watch the magic!',
         attachTo: {
-            element: '.btn-primary', // Send button (adjust if class changes)
+            element: '#composer-submit-button', // Send button (adjust if class changes)
             on: 'left'
         },
         buttonText: 'Done!'
     }
     // Add more steps easily here
 ]
+// type Message = { action: "startTour" }
+// type SendResponse = (response?: { success: boolean; error?: string }) => void
 
-// Types for Chrome messaging
+// Voice narration helper (Web Speech API)
+let speechUtterance: SpeechSynthesisUtterance | null = null
+let isSpeaking: boolean = false
+
+const speakText = (text: string): void => {
+    if ('speechSynthesis' in window && !isSpeaking) {
+        speechUtterance = new SpeechSynthesisUtterance(text)
+        speechUtterance.rate = 0.9 // Slightly slower for clarity (0.1-10 range)
+        speechUtterance.pitch = 1.0 // Natural pitch (0.1-2)
+        speechUtterance.volume = 0.8 // Volume (0-1)
+
+        // Optional: Select voice (e.g., first English female)
+        const voices: SpeechSynthesisVoice[] = speechSynthesis.getVoices()
+        // console.log(voices)
+        const englishVoice: SpeechSynthesisVoice | undefined = voices.find((voice: SpeechSynthesisVoice) => voice.lang.startsWith('en') && voice.name.includes('Male'))
+        if (englishVoice) speechUtterance.voice = englishVoice
+
+        speechUtterance.onend = () => { isSpeaking = false }
+        speechUtterance.onerror = (e: SpeechSynthesisErrorEvent) => {
+            console.error('[Shepherd Injector] Speech error:', e)
+            isSpeaking = false
+        }
+
+        speechSynthesis.speak(speechUtterance)
+        isSpeaking = true
+        console.log('[Shepherd Injector] Narrating:', text)
+    } else {
+        console.warn('[Shepherd Injector] Speech API not supported or already speaking')
+    }
+}
+
+const stopSpeech = (): void => {
+    if (speechUtterance && isSpeaking) {
+        speechSynthesis.cancel()
+        isSpeaking = false
+        console.log('[Shepherd Injector] Speech stopped')
+    }
+}
+
 type Message = { action: "startTour" }
 type SendResponse = (response?: { success: boolean; error?: string }) => void
 
@@ -77,10 +126,13 @@ chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.M
 
             try {
                 const tour: Tour = new Shepherd.Tour({
+                    // useDefaultLook: false,
                     defaultStepOptions: {
+                        classes: "pro-theme",
                         scrollTo: true,
                         cancelIcon: { enabled: true },
-                        classes: "shepherd-theme-arrows"
+                        // classes: "shepherd-theme-arrows",
+                        // showProgress: true  // Built-in bar
                     }
                 })
 
@@ -151,6 +203,18 @@ chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.M
                 if (addedSteps === 0) {
                     throw new Error('No valid steps could be added')
                 }
+                tour.on('show', (event: { step: Step }) => {  // Fixed: Now uses imported Event type
+                    const stepText: string = event.step.options.text as string
+                    speakText(stepText) // Narrate on show
+                })
+
+                tour.on('hide', () => {
+                    stopSpeech() // Pause on next/back
+                })
+
+                tour.on('complete', () => {
+                    stopSpeech() // Stop on finish
+                })
 
                 console.log(`[Shepherd Injector] Tour configured with ${addedSteps} steps, starting in 500ms...`)
 

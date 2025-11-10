@@ -1,0 +1,121 @@
+/*
+ * PROFESSIONAL SHEPHERD.JS THEME
+ * Inspired by modern UI design systems (e.g., Bootstrap, Material)
+ */
+
+/* ===================================================
+   1. MAIN STEP CONTAINER (.shepherd-element)
+   =================================================== */
+.pro-theme.shepherd-element {
+    /* Subtle border and shadow for a "floating card" effect */
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    max-width: 350px;
+}
+
+/* ===================================================
+   2. CONTENT AND HEADER
+   =================================================== */
+
+/* Header Area */
+.pro-theme .shepherd-header {
+    background-color: #f5f5f5;
+    /* Light gray header */
+    color: #333;
+    padding: 12px 16px;
+    border-radius: 7px 7px 0 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Title Text */
+.pro-theme .shepherd-title {
+    font-size: 1.15em;
+    font-weight: 600;
+    /* Semi-bold */
+    margin: 0;
+}
+
+/* Close/Cancel Icon */
+.pro-theme .shepherd-cancel-icon {
+    color: #888;
+    transition: color 0.15s ease-in-out;
+}
+
+.pro-theme .shepherd-cancel-icon:hover {
+    color: #444;
+}
+
+/* Content/Body Area */
+.pro-theme .shepherd-content {
+    background-color: #ffffff;
+    color: #555;
+    padding: 16px;
+    line-height: 1.5;
+}
+
+/* ===================================================
+   3. BUTTONS (FOOTER)
+   =================================================== */
+
+/* Footer */
+.pro-theme .shepherd-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f9f9f9;
+    border-radius: 0 0 7px 7px;
+    /* This Shepherd class handles button alignment */
+    /* .shepherd-buttons */
+}
+
+/* Button Base Style */
+.pro-theme .shepherd-button {
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 0.9em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+/* Primary/Next Button */
+.pro-theme .shepherd-button:last-child {
+    background-color: #007bff;
+    /* Primary Blue */
+    color: white;
+}
+
+.pro-theme .shepherd-button:last-child:hover {
+    background-color: #0056b3;
+}
+
+/* Secondary/Back/Skip Button */
+.pro-theme .shepherd-button:not(:last-child) {
+    background-color: transparent;
+    color: #555;
+    border: 1px solid #ccc;
+}
+
+.pro-theme .shepherd-button:not(:last-child):hover {
+    background-color: #eee;
+    color: #333;
+}
+
+/* ===================================================
+   4. ARROW/TIP
+   =================================================== */
+
+/* Arrow color should match the header/content for a clean look */
+.pro-theme .shepherd-arrow:before {
+    /* Tip color usually matches the step background for themes */
+    background-color: #ffffff;
+}
+
+/* Border of the arrow */
+.pro-theme.shepherd-element.shepherd-has-tip .shepherd-tip::before,
+.pro-theme.shepherd-element.shepherd-has-tip .shepherd-tip::after {
+    box-shadow: none;
+    /* Often helpful to remove default shadows */
+}

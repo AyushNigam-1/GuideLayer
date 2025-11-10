@@ -1,0 +1,76 @@
+/*
+ * CUSTOM SHEPHERD.JS THEME FOR PLASMO EXTENSION
+ * * NOTE: The .shepherd-element is the main container for the popup.
+ * We chain the custom class (.my-purple-theme) with the default class
+ * to ensure high specificity and proper overriding of default styles.
+ */
+
+/* 1. Main Step Element Styling */
+.my-purple-theme.shepherd-element {
+    /* Main popup container styling */
+    border: 3px solid #5a008c;
+    /* Purple Border */
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    /* Stronger shadow */
+    font-family: Arial, sans-serif;
+}
+
+/* 2. Content/Body Area Styling */
+.my-purple-theme .shepherd-content {
+    background-color: #f7f3ff;
+    /* Light purple background */
+    color: #333;
+    padding: 20px;
+}
+
+/* 3. Header/Title Area Styling */
+.my-purple-theme .shepherd-header {
+    background-color: #5a008c;
+    /* Dark Purple header */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 9px 9px 0 0;
+}
+
+/* 4. Title Text Styling */
+.my-purple-theme .shepherd-title {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+/* 5. Button Styling (General) */
+.my-purple-theme .shepherd-button {
+    background-color: #8e2de2;
+    /* Primary button color (Purple) */
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.my-purple-theme .shepherd-button:hover {
+    background-color: #6a1ba9;
+    /* Darken on hover */
+}
+
+/* 6. Back/Cancel Button (or the first button) */
+.my-purple-theme .shepherd-button:first-child {
+    background-color: #ccc;
+    /* Lighter color for secondary action */
+    color: #333;
+}
+
+.my-purple-theme .shepherd-button:first-child:hover {
+    background-color: #b3b3b3;
+}
+
+/* 7. Arrow/Tip Styling */
+/* This is crucial for fixing the tip color if you are using a themed arrow */
+.my-purple-theme .shepherd-arrow:before {
+    /* Set the arrow color to match the header or content, usually the step's background */
+    background-color: #5a008c;
+}
