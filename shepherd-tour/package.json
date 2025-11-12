@@ -36,6 +36,24 @@
   "manifest": {
     "host_permissions": [
       "https://*/*"
+    ],
+    "permissions": [
+      "activePopover",
+      "tabs"
+    ],
+    "options_ui": {
+      "page": "options.html",
+      "open_in_tab": false
+    },
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "assets/icon.png"
+        ],
+        "matches": [
+          "https://chatgpt.com/*"
+        ]
+      }
     ]
   }
 }

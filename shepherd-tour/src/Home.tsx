@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Play, CheckCircle, AlertCircle, Volume2, Search, BookOpen } from "lucide-react"
+import { Play, CheckCircle, AlertCircle, Square, Volume2, Search, BookOpen, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
@@ -18,7 +18,7 @@ export default function Popup() {
     // Sample courses list (expand as needed)
     const courses = [
         { id: 'chatgpt', name: 'ChatGPT', icon: Play, description: 'Interactive tour for ChatGPT prompts' },
-        // Add more: { id: 'figma', name: 'Figma', icon: Square, description: 'Design workflow guide' }
+        { id: 'figma', name: 'Figma', icon: Square, description: 'Design workflow guide' }
     ]
 
     // Filtered list based on search
@@ -61,7 +61,19 @@ export default function Popup() {
             setIsDisabled(false)
         }
     }
-
+    const handleCreateNew = (): void => {
+        // Open as persistent mini normal window (stays open on outside clicks)
+        chrome.windows.create({
+            url: chrome.runtime.getURL('options.html'),
+            type: 'normal',  // Persistent (no auto-close on blur)
+            width: 450,
+            height: 650,
+            left: Math.floor((screen.availWidth - (450)) / 2),
+            top: Math.floor((screen.availHeight - (650)) / 2),
+            focused: true,
+            state: 'normal'  // Visible, not minimized
+        })
+    }
     return (
         // Root: Rounded, no white strips
         <motion.div
@@ -152,7 +164,15 @@ export default function Popup() {
                     )}
                     {buttonText}
                 </motion.button>
-
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCreateNew}
+                    className="w-full py-2 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white mb-4"
+                >
+                    <Plus className="w-4 h-4" />
+                    Create New Guide
+                </motion.button>
                 {/* Status */}
                 {status && (
                     <motion.div

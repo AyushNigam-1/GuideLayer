@@ -13,7 +13,74 @@ export const config: PlasmoCSConfig = {
     matches: ["https://chatgpt.com/*"],
     run_at: "document_idle"
 }
+const sidebarHTML = `
+  <div id="creator-sidebar" class="creator-sidebar">
+    <div class="sidebar-header">
+      <h3>Create New Course</h3>
+      <button id="close-sidebar">×</button>
+    </div>
+    <form id="creator-form">
+      <input type="text" id="course-name" placeholder="Course Name" />
+      <textarea id="course-desc" placeholder="Description"></textarea>
+      <div class="pick-section">
+        <label>Element Selector</label>
+        <input type="text" id="element-selector" placeholder="e.g., #prompt-textarea" />
+        <button type="button" id="pick-button">Pick Element</button>
+      </div>
+      <button type="submit">Create Course</button>
+    </form>
+  </div>
+`
 
+// Toggle sidebar
+const toggleSidebar = (show: boolean): void => {
+    let sidebar = document.getElementById('creator-sidebar')
+    if (show && !sidebar) {
+        sidebar = document.createElement('div')
+        sidebar.innerHTML = sidebarHTML
+        document.body.appendChild(sidebar)
+        document.getElementById('close-sidebar')?.addEventListener('click', () => toggleSidebar(false))
+        document.getElementById('pick-button')?.addEventListener('click', startPickMode)
+        document.getElementById('creator-form')?.addEventListener('submit', handleCreate)
+    } else if (sidebar) {
+        sidebar.remove()
+    }
+}
+
+const startPickMode = (): void => {
+    const input = document.getElementById('element-selector') as HTMLInputElement
+    const pickListener = (e: MouseEvent): void => {
+        e.preventDefault()
+        e.stopPropagation()
+        const target = e.target as HTMLElement
+        const id = target.id
+        const selector = id ? `#${id}` : target.tagName.toLowerCase()
+        input.value = selector
+        document.removeEventListener('click', pickListener)
+        document.body.style.cursor = 'default'
+    }
+    document.addEventListener('click', pickListener, true)
+    document.body.style.cursor = 'crosshair'
+}
+
+// In onMessage listener
+if (message.action === "openCreator") {
+    toggleSidebar(true)
+}
+
+// Handle form submit (save to storage)
+const handleCreate = (e: Event): void => {
+    e.preventDefault()
+    const name = (document.getElementById('course-name') as HTMLInputElement).value
+    const desc = (document.getElementById('course-desc') as HTMLTextAreaElement).value
+    const selector = (document.getElementById('element-selector') as HTMLInputElement).value
+    // Save to storage
+    chrome.storage.local.get('courses', (result) => {
+        const courses = [...(result.courses || []), { id: Date.now().toString(), name, desc, selector }]
+        chrome.storage.local.set({ courses })
+        toggleSidebar(false)
+    })
+}
 // Custom interface for step data
 interface StepData extends Partial<StepOptions> {
     id: string
@@ -24,7 +91,11 @@ interface StepData extends Partial<StepOptions> {
     }
     buttonText?: string
 }
-
+const getAssetUrl = (path: string): string => {
+    // This function must be used to correctly load resources bundled with the extension.
+    return chrome.runtime.getURL(path);
+};
+const inputPromptImageUrl = getAssetUrl('assets/icon.png'); // <-- UPDATE PATH HERE
 // Data-driven steps array - easy to extend/add new steps
 const tourSteps: StepData[] = [
     {
@@ -33,11 +104,13 @@ const tourSteps: StepData[] = [
             '<div class="custom-content-box">' +
             '<h4>This is the custom HTML title!</h4>' +
             '<p>The content, including <b>bold text</b>, is rendered.</p>' +
-            '<img src="[URL_TO_A_SMALL_IMAGE]" style="max-width: 100px; display: block; margin-top: 10px;"/>' +
+            `<img src="${inputPromptImageUrl}" style="max-width: 100px; display: block; margin-top: 10px;"/>` +
             '</div>'
         ],
+        // text: 'Welcome. Let"s start',
+
         attachTo: undefined, // No attachment → Shepherd auto-centers the step
-        // buttonText: 'Start'
+        buttonText: 'Start'
     },
     {
         id: 'input-prompt',
