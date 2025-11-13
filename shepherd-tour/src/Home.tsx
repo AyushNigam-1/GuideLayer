@@ -61,18 +61,33 @@ export default function Popup() {
             setIsDisabled(false)
         }
     }
-    const handleCreateNew = (): void => {
-        // Open as persistent mini normal window (stays open on outside clicks)
-        chrome.windows.create({
-            url: chrome.runtime.getURL('options.html'),
-            type: 'normal',  // Persistent (no auto-close on blur)
-            width: 450,
-            height: 650,
-            left: Math.floor((screen.availWidth - (450)) / 2),
-            top: Math.floor((screen.availHeight - (650)) / 2),
-            focused: true,
-            state: 'normal'  // Visible, not minimized
-        })
+    const handleCreateNew = async () => {
+        if (!chrome.sidePanel) {
+            setStatus("Side Panel API not available (requires Chrome 114+).")
+            return
+        }
+
+        try {
+            // Get the ID of the currently active tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+
+            if (!tab?.id) {
+                setStatus("No active tab found.")
+                return
+            }
+
+            // Open the Side Panel for the active tab
+            await chrome.sidePanel.open({ tabId: tab.id })
+
+            setStatus("Opening Course Creator Sidebar... 👋")
+            // Optionally, close the Popup after opening the Side Panel
+            setTimeout(() => {
+                window.close()
+            }, 500)
+
+        } catch (error) {
+            setStatus(`Error opening Side Panel: ${error.message}`)
+        }
     }
     return (
         // Root: Rounded, no white strips
@@ -167,7 +182,7 @@ export default function Popup() {
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={handleCreateNew}
+                    onClick={handleCreateNew} // 👈 ATTACHED HERE
                     className="w-full py-2 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white mb-4"
                 >
                     <Plus className="w-4 h-4" />
