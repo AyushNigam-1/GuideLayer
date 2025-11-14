@@ -1,12 +1,404 @@
-// sidepanel.tsx
+import { useState, useEffect, useCallback } from "react"
+import { Wand2, X, Plus, Trash2, CheckSquare } from "lucide-react"
+import "./index.css"
+// Define the type for the guide popup's alignment
+type Placement = 'top' | 'right' | 'bottom' | 'left';
 
-import React from 'react'
+// Define the structure for a tour step, mirroring the requested JSON structure
+interface StepData {
+    id: string;
+    text: string; // Simplified to string for this UI's input
+    image: string; // Placeholder for image URL
+    attachTo?: {
+        element: string; // The CSS selector
+        on: Placement;  // The guide popup alignment
+    };
+    // buttonText and complex text array handling omitted for UI simplicity
+}
+
+// Mock selector values for demonstration in the canvas environment
+const MOCK_SELECTORS = [
+    "#prompt-textarea",
+    ".submit-button",
+    "div.header-logo",
+    "button[aria-label='Settings']"
+];
+
+// Key for localStorage
+const LOCAL_STORAGE_KEY = 'courseCreatorSteps';
 
 const SidePanel = () => {
+    // --- Application State Management ---
+    const [isPicking, setIsPicking] = useState(false)
+    const [steps, setSteps] = useState<StepData[]>([]);
+    const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
+
+    // chosenSelector is primarily for display/temporary feedback
+    const [chosenSelector, setChosenSelector] = useState("");
+
+
+    // --- Local Storage Data Loader ---
+    useEffect(() => {
+        try {
+            const storedStepsJson = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (storedStepsJson) {
+                const loadedSteps = JSON.parse(storedStepsJson) as StepData[];
+                if (loadedSteps && loadedSteps.length > 0) {
+                    setSteps(loadedSteps);
+                    setActiveStepIndex(0);
+                    // Set the selector display from the loaded data
+                    setChosenSelector(loadedSteps[0].attachTo?.element || "");
+                    console.log("Tour steps loaded from Local Storage.");
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load steps from Local Storage:", error);
+        }
+
+        // Default initialization if no data found
+        const defaultStep: StepData = {
+            id: 'step-1',
+            text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
+            image: '',
+            attachTo: { element: '', on: 'right' } // Set default placement
+        };
+        setSteps([defaultStep]);
+        setActiveStepIndex(0);
+        setChosenSelector(defaultStep.attachTo?.element || "");
+
+    }, []);
+
+    // --- Handlers for Step Management ---
+
+    const addStep = () => {
+        const newId = `step-${Date.now()}`;
+        const newStep: StepData = {
+            id: newId,
+            text: `Step ${steps.length + 1} instructions.`,
+            image: '',
+            attachTo: { element: '', on: 'right' }, // Set default placement
+        };
+        setSteps(prevSteps => [...prevSteps, newStep]);
+        setActiveStepIndex(steps.length); // Set the new step as active
+        setChosenSelector('');
+    };
+
+    const deleteStep = (index: number) => {
+        if (steps.length === 1) {
+            alert("Cannot delete the last step.");
+            return;
+        }
+
+        const newSteps = steps.filter((_, i) => i !== index);
+        setSteps(newSteps);
+
+        // Adjust active index
+        if (activeStepIndex === index) {
+            setActiveStepIndex(0); // Default to the first step
+        } else if (activeStepIndex > index) {
+            setActiveStepIndex(activeStepIndex - 1);
+        }
+    };
+
+    const setActiveStep = (index: number) => {
+        setActiveStepIndex(index);
+        // Ensure steps[index] exists before accessing element
+        if (steps[index]) {
+            setChosenSelector(steps[index].attachTo?.element || "");
+        }
+    };
+
+    // Handler for updating top-level fields like text and image
+    const updateStepTextOrImage = useCallback((index: number, field: 'text' | 'image', value: string) => {
+        setSteps(prevSteps => {
+            const newSteps = [...prevSteps];
+            newSteps[index] = {
+                ...newSteps[index],
+                [field]: value
+            };
+            return newSteps;
+        });
+    }, []);
+
+    // Handler for updating nested fields within attachTo
+    const updateStepAttachment = useCallback((index: number, field: 'element' | 'on', value: string) => {
+        setSteps(prevSteps => {
+            const newSteps = [...prevSteps];
+            // Ensure attachTo structure exists or initialize it with defaults if not
+            const currentAttachTo = newSteps[index].attachTo || { element: '', on: 'right' as Placement };
+
+            newSteps[index] = {
+                ...newSteps[index],
+                attachTo: {
+                    ...currentAttachTo,
+                    // Use type assertion for 'on' field since 'value' comes as a string
+                    [field]: field === 'on' ? value as Placement : value,
+                }
+            };
+            return newSteps;
+        });
+
+        // Update the display selector immediately if 'element' field changed
+        if (field === 'element') {
+            setChosenSelector(value);
+        }
+    }, []);
+
+
+    // Effect to update the display selector when active step changes
+    useEffect(() => {
+        if (activeStepIndex !== null && steps[activeStepIndex]) {
+            setChosenSelector(steps[activeStepIndex].attachTo?.element || "");
+        }
+    }, [activeStepIndex, steps]);
+
+
+    // --- Element Picking Mock Logic ---
+
+    // Function to simulate the content script selecting an element
+    const handleElementSelection = (selector: string) => {
+        if (activeStepIndex === null) {
+            console.error("No active step to assign selector to.");
+            return;
+        }
+
+        // Update both the state and the display
+        updateStepAttachment(activeStepIndex, 'element', selector);
+        setIsPicking(false);
+        console.log(`Element assigned to Step ${activeStepIndex + 1}: ${selector}`);
+    };
+
+    // Function to trigger element picking (Mocked)
+    const startElementPicker = async () => {
+        if (activeStepIndex === null) {
+            alert("Please select a step to assign an element.");
+            return;
+        }
+
+        setIsPicking(true);
+        setChosenSelector("Click on the main page to select...");
+
+        // --- MOCKING CHROME API CALLS ---
+        console.log("Mocking: Sending 'START_ELEMENT_PICKER' message to content script.");
+        const mockSelector = MOCK_SELECTORS[Math.floor(Math.random() * MOCK_SELECTORS.length)];
+
+        setTimeout(() => {
+            console.log("Mocking: Receiving 'ELEMENT_SELECTED' message from runtime.");
+            handleElementSelection(mockSelector);
+        }, 1500);
+    };
+
+    // Function to abort picking and send cleanup message (Mocked)
+    const handleAbortPicking = async () => {
+        setIsPicking(false);
+        setChosenSelector(steps[activeStepIndex]?.attachTo?.element || "");
+        console.log("Mocking: Sending 'ABORT_PICKER' message for cleanup.");
+    };
+
+
+    // --- Local Storage Save Logic ---
+
+    const saveStepsToLocalStorage = () => {
+        try {
+            // Filter out steps that are completely empty
+            const cleanSteps = steps.map((step) => {
+                // IMPORTANT FIX: Use a copy and delete the optional property 
+                // to avoid TypeScript errors related to destructuring optional fields.
+                let stepToSave: StepData = { ...step };
+
+                // Check if 'attachTo' exists and if the element is empty AND 'on' is the default 'right'
+                if (stepToSave.attachTo && !stepToSave.attachTo.element && stepToSave.attachTo.on === 'right') {
+                    // Create a copy without the attachTo property
+                    delete stepToSave.attachTo;
+                }
+
+                return stepToSave;
+            }).filter(step => step.text.trim() !== '' || step.attachTo?.element); // Final filter to remove empty steps
+
+            const jsonOutput = JSON.stringify(cleanSteps, null, 2);
+            localStorage.setItem(LOCAL_STORAGE_KEY, jsonOutput);
+
+            alert("Tour steps saved successfully to your browser's local storage!");
+            console.log("Steps saved to Local Storage under key:", LOCAL_STORAGE_KEY);
+
+        } catch (error) {
+            console.error("Error saving steps to Local Storage:", error);
+            alert("Failed to save steps. Check the console for details.");
+        }
+    };
+
+    const activeStep = steps[activeStepIndex];
+    const currentElement = activeStep?.attachTo?.element || "";
+    const currentPlacement = activeStep?.attachTo?.on || "right";
+
+
+    // Only render the panel content after the initial steps are loaded
+    if (steps.length === 0) {
+        return (
+            <div className="p-4 flex flex-col h-full bg-gray-50 font-inter items-center justify-center">
+                <p className="text-gray-500">Loading tour data...</p>
+            </div>
+        );
+    }
+
     return (
-        <div style={{ padding: '16px' }}>
-            <h1>My Custom Sidebar</h1>
-            <p>This UI is persistent and runs alongside any tab.</p>
+        <div className="p-4 flex flex-col h-full bg-gray-50 font-inter">
+            <h1 className="text-xl font-bold mb-4 flex items-center justify-between border-b pb-2">
+                Course Creator
+                <button onClick={handleAbortPicking} className="text-gray-500 hover:text-red-500 transition-colors" disabled={!isPicking}>
+                    <X className="w-5 h-5" />
+                </button>
+            </h1>
+
+            {/* Status Indicator (Simple) */}
+            <div className={`text-center p-2 rounded-lg mb-4 text-sm font-medium bg-blue-100 text-blue-700`}>
+                Data is saved directly in your browser's local storage.
+            </div>
+
+            {/* Step Management List */}
+            <div className="mb-4">
+                <h2 className="text-lg font-semibold mb-2">Steps ({steps.length})</h2>
+                <div className="max-h-32 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white shadow-inner">
+                    {steps.map((step, index) => (
+                        <div
+                            key={step.id}
+                            className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${index === activeStepIndex
+                                ? 'bg-blue-100 border-blue-500 border-2'
+                                : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
+                                }`}
+                            onClick={() => setActiveStep(index)}
+                        >
+                            <span className="truncate text-sm font-medium">
+                                {index + 1}. {step.text.substring(0, 30) || "New Step"}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                                {step.attachTo?.element && <CheckSquare className="w-4 h-4 text-green-600" />}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); deleteStep(index); }}
+                                    className="p-1 text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={addStep}
+                    className="mt-3 w-full py-2 bg-green-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+                >
+                    <Plus className="w-5 h-5" />
+                    New Step
+                </button>
+            </div>
+
+            {/* Active Step Editor */}
+            {activeStep && (
+                <div className="flex flex-col space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-md mb-4">
+                    <h3 className="text-md font-bold text-blue-600">Editing Step {activeStepIndex + 1}</h3>
+
+                    {/* Step Text Input */}
+                    <div>
+                        <label htmlFor="step-text" className="block text-sm font-medium text-gray-700 mb-1">
+                            Instruction Text
+                        </label>
+                        <textarea
+                            id="step-text"
+                            rows={3}
+                            value={activeStep.text}
+                            onChange={(e) => updateStepTextOrImage(activeStepIndex, 'text', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter the guiding text for this step..."
+                        />
+                    </div>
+
+                    {/* Step Image Input */}
+                    <div>
+                        <label htmlFor="step-image" className="block text-sm font-medium text-gray-700 mb-1">
+                            Image URL (Optional)
+                        </label>
+                        <input
+                            id="step-image"
+                            type="text"
+                            value={activeStep.image}
+                            onChange={(e) => updateStepTextOrImage(activeStepIndex, 'image', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="e.g., https://placehold.co/300x150"
+                        />
+                    </div>
+
+                    {/* Element Selector Display & Picker */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Element Selector (attachTo.element)
+                        </label>
+                        <input
+                            type="text"
+                            readOnly
+                            value={currentElement || (isPicking ? "Click on the main page to select..." : "No element assigned.")}
+                            className={`w-full p-2 border rounded-lg text-sm transition-colors mb-2 ${currentElement ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-white'
+                                }`}
+                            placeholder="e.g., #prompt-textarea"
+                        />
+
+                        {isPicking ? (
+                            <button
+                                onClick={handleAbortPicking}
+                                className="w-full py-2 bg-red-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                                Cancel Picking...
+                            </button>
+                        ) : (
+                            <button
+                                onClick={startElementPicker}
+                                className="w-full py-2 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                                disabled={isPicking || activeStepIndex === null}
+                            >
+                                <Wand2 className="w-5 h-5" />
+                                Pick Element for Step {activeStepIndex + 1}
+                            </button>
+                        )}
+                        <p className="mt-2 text-xs text-gray-500 italic">
+                            {isPicking
+                                ? "Hover to highlight, click to select, or press Cancel."
+                                : "Click the button to assign a target element to this step."
+                            }
+                        </p>
+                    </div>
+
+                    {/* Placement Selector */}
+                    <div>
+                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 mb-1">
+                            Guide Alignment (attachTo.on)
+                        </label>
+                        <select
+                            id="step-placement"
+                            value={currentPlacement}
+                            onChange={(e) => updateStepAttachment(activeStepIndex, 'on', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                        >
+                            <option value="right">Right (Default)</option>
+                            <option value="left">Left</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                        </select>
+                    </div>
+
+                </div>
+            )}
+
+            {/* Footer / Save Button */}
+            <div className="mt-auto pt-4 border-t">
+                <button
+                    onClick={saveStepsToLocalStorage}
+                    className="w-full py-3 bg-purple-600 text-white rounded-lg font-bold shadow-lg hover:bg-purple-700 transition-colors"
+                    disabled={steps.length === 0}
+                >
+                    Save Steps to Local Storage
+                </button>
+            </div>
         </div>
     )
 }

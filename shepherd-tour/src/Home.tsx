@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react"
-import { Play, CheckCircle, AlertCircle, Square, Volume2, Search, BookOpen, Plus } from "lucide-react"
+import { useState } from "react"
+import { Play, Square, Volume2, Search, BookOpen, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
@@ -85,7 +85,7 @@ export default function Popup() {
                 window.close()
             }, 500)
 
-        } catch (error) {
+        } catch (error: any) {
             setStatus(`Error opening Side Panel: ${error.message}`)
         }
     }

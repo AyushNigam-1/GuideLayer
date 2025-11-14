@@ -15,56 +15,6 @@ export const config: PlasmoCSConfig = {
     run_at: "document_idle"
 }
 
-
-// Toggle sidebar
-// const toggleSidebar = (show: boolean): void => {
-//     let sidebar = document.getElementById('creator-sidebar')
-//     if (show && !sidebar) {
-//         sidebar = document.createElement('div')
-//         sidebar.innerHTML = sidebarHTML
-//         document.body.appendChild(sidebar)
-//         document.getElementById('close-sidebar')?.addEventListener('click', () => toggleSidebar(false))
-//         document.getElementById('pick-button')?.addEventListener('click', startPickMode)
-//         document.getElementById('creator-form')?.addEventListener('submit', handleCreate)
-//     } else if (sidebar) {
-//         sidebar.remove()
-//     }
-// }
-
-// const startPickMode = (): void => {
-//     const input = document.getElementById('element-selector') as HTMLInputElement
-//     const pickListener = (e: MouseEvent): void => {
-//         e.preventDefault()
-//         e.stopPropagation()
-//         const target = e.target as HTMLElement
-//         const id = target.id
-//         const selector = id ? `#${id}` : target.tagName.toLowerCase()
-//         input.value = selector
-//         document.removeEventListener('click', pickListener)
-//         document.body.style.cursor = 'default'
-//     }
-//     document.addEventListener('click', pickListener, true)
-//     document.body.style.cursor = 'crosshair'
-// }
-// type Message = { action: "startTour" | "openCreator" } // 🛑 Update Message type
-// In onMessage listener
-// if (message.action === "openCreator") {
-//     toggleSidebar(true)
-// }
-
-// Handle form submit (save to storage)
-// const handleCreate = (e: Event): void => {
-//     e.preventDefault()
-//     const name = (document.getElementById('course-name') as HTMLInputElement).value
-//     const desc = (document.getElementById('course-desc') as HTMLTextAreaElement).value
-//     const selector = (document.getElementById('element-selector') as HTMLInputElement).value
-//     // Save to storage
-//     chrome.storage.local.get('courses', (result) => {
-//         const courses = [...(result.courses || []), { id: Date.now().toString(), name, desc, selector }]
-//         chrome.storage.local.set({ courses })
-//         toggleSidebar(false)
-//     })
-// }
 // Custom interface for step data
 interface StepData extends Partial<StepOptions> {
     id: string
@@ -116,10 +66,7 @@ const tourSteps: StepData[] = [
     }
     // Add more steps easily here
 ]
-// type Message = { action: "startTour" }
-// type SendResponse = (response?: { success: boolean; error?: string }) => void
 
-// Voice narration helper (Web Speech API)
 let speechUtterance: SpeechSynthesisUtterance | null = null
 let isSpeaking: boolean = false
 
@@ -162,11 +109,7 @@ type Message = { action: "startTour" | "openCreator" } // 🛑 Update Message ty
 type SendResponse = (response?: { success: boolean; error?: string }) => void
 
 chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
-    // if (message.action === "openCreator") {
-    //     console.log("[Sidebar Injector] Trigger received to open creator.");
-    //     toggleSidebar(true); // Call the exported function
-    //     sendResponse({ success: true });
-    // }
+
     if (message.action === "startTour") {
         console.log("[Shepherd Injector] Trigger received in content script.")
 
