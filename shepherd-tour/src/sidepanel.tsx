@@ -15,15 +15,6 @@ interface StepData {
     };
     // buttonText and complex text array handling omitted for UI simplicity
 }
-
-// Mock selector values for demonstration in the canvas environment
-const MOCK_SELECTORS = [
-    "#prompt-textarea",
-    ".submit-button",
-    "div.header-logo",
-    "button[aria-label='Settings']"
-];
-
 // Key for localStorage
 const LOCAL_STORAGE_KEY = 'courseCreatorSteps';
 
@@ -145,7 +136,17 @@ const SidePanel = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const listener = (msg: any) => {
+            if (msg.action === "ELEMENT_SELECTED") {
+                console.log("SELECTOR RECEIVED:", msg.selector);
+                setChosenSelector(msg.selector);
+            }
+        };
 
+        chrome.runtime.onMessage.addListener(listener);
+        return () => chrome.runtime.onMessage.removeListener(listener);
+    }, []);
     // Effect to update the display selector when active step changes
     useEffect(() => {
         if (activeStepIndex !== null && steps[activeStepIndex]) {
@@ -178,15 +179,25 @@ const SidePanel = () => {
 
         setIsPicking(true);
         setChosenSelector("Click on the main page to select...");
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]?.id) return
+
+            chrome.tabs.sendMessage(
+                tabs[0].id,
+                { action: "START_ELEMENT_PICKER" },
+                () => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Error:", chrome.runtime.lastError.message)
+                    } else {
+                        console.log("Picker started")
+                    }
+                }
+            )
+        })
 
         // --- MOCKING CHROME API CALLS ---
         console.log("Mocking: Sending 'START_ELEMENT_PICKER' message to content script.");
-        const mockSelector = MOCK_SELECTORS[Math.floor(Math.random() * MOCK_SELECTORS.length)];
 
-        setTimeout(() => {
-            console.log("Mocking: Receiving 'ELEMENT_SELECTED' message from runtime.");
-            handleElementSelection(mockSelector);
-        }, 1500);
     };
 
     // Function to abort picking and send cleanup message (Mocked)
