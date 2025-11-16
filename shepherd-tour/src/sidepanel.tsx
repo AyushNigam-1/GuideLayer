@@ -1,44 +1,51 @@
 import { useState, useEffect, useCallback } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare } from "lucide-react"
 import "./index.css"
-// Define the type for the guide popup's alignment
-type Placement = 'top' | 'right' | 'bottom' | 'left';
+import { collection, addDoc } from 'firebase/firestore'
+import { Placement, Step } from "./types"
+import { supabase } from "./config/supabase"
 
-// Define the structure for a tour step, mirroring the requested JSON structure
-interface StepData {
-    id: string;
-    text: string; // Simplified to string for this UI's input
-    image: string; // Placeholder for image URL
-    attachTo?: {
-        element: string; // The CSS selector
-        on: Placement;  // The guide popup alignment
-    };
-    // buttonText and complex text array handling omitted for UI simplicity
-}
+
 // Key for localStorage
 const LOCAL_STORAGE_KEY = 'courseCreatorSteps';
 
 const SidePanel = () => {
     // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
-    const [steps, setSteps] = useState<StepData[]>([]);
+    const [steps, setSteps] = useState<Step[]>([]);
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
 
     // chosenSelector is primarily for display/temporary feedback
     const [chosenSelector, setChosenSelector] = useState("");
 
-
+    const handleCreateCourse = async (title: string, steps: Step[]) => {
+        try {
+            const { data, error } = await supabase
+                .from("courses")
+                .insert({
+                    // user_id: user.id,
+                    title
+                })
+            // const docRef = await addDoc(collection(db, 'courses'), {
+            //     title,
+            //     steps
+            // })
+            console.log('Course added with ID:', data)
+            // setStatus('Course created in Firestore!')
+        } catch (error) {
+            console.error('Error adding course:', error)
+            // setStatus('Failed to create course')
+        }
+    }
     // --- Local Storage Data Loader ---
     useEffect(() => {
         try {
             const storedStepsJson = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (storedStepsJson) {
-                const loadedSteps = JSON.parse(storedStepsJson) as StepData[];
+                const loadedSteps = JSON.parse(storedStepsJson) as Step[];
                 if (loadedSteps && loadedSteps.length > 0) {
                     setSteps(loadedSteps);
                     setActiveStepIndex(0);
-                    // Set the selector display from the loaded data
-                    setChosenSelector(loadedSteps[0].attachTo?.element || "");
                     console.log("Tour steps loaded from Local Storage.");
                     return;
                 }
@@ -48,7 +55,7 @@ const SidePanel = () => {
         }
 
         // Default initialization if no data found
-        const defaultStep: StepData = {
+        const defaultStep: Step = {
             id: 'step-1',
             text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
             image: '',
@@ -56,7 +63,7 @@ const SidePanel = () => {
         };
         setSteps([defaultStep]);
         setActiveStepIndex(0);
-        setChosenSelector(defaultStep.attachTo?.element || "");
+        // setChosenSelector(defaultStep.attachTo?.element || "");
 
     }, []);
 
@@ -64,15 +71,17 @@ const SidePanel = () => {
 
     const addStep = () => {
         const newId = `step-${Date.now()}`;
-        const newStep: StepData = {
+        const newStep: Step = {
             id: newId,
             text: `Step ${steps.length + 1} instructions.`,
             image: '',
             attachTo: { element: '', on: 'right' }, // Set default placement
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
+
+        console.log("before active steps", activeStepIndex)
         setActiveStepIndex(steps.length); // Set the new step as active
-        setChosenSelector('');
+        console.log(steps.length)
     };
 
     const deleteStep = (index: number) => {
@@ -80,11 +89,9 @@ const SidePanel = () => {
             alert("Cannot delete the last step.");
             return;
         }
-
         const newSteps = steps.filter((_, i) => i !== index);
         setSteps(newSteps);
 
-        // Adjust active index
         if (activeStepIndex === index) {
             setActiveStepIndex(0); // Default to the first step
         } else if (activeStepIndex > index) {
@@ -94,10 +101,6 @@ const SidePanel = () => {
 
     const setActiveStep = (index: number) => {
         setActiveStepIndex(index);
-        // Ensure steps[index] exists before accessing element
-        if (steps[index]) {
-            setChosenSelector(steps[index].attachTo?.element || "");
-        }
     };
 
     // Handler for updating top-level fields like text and image
@@ -114,6 +117,7 @@ const SidePanel = () => {
 
     // Handler for updating nested fields within attachTo
     const updateStepAttachment = useCallback((index: number, field: 'element' | 'on', value: string) => {
+        console.log("update", activeStepIndex, field, value)
         setSteps(prevSteps => {
             const newSteps = [...prevSteps];
             // Ensure attachTo structure exists or initialize it with defaults if not
@@ -129,46 +133,39 @@ const SidePanel = () => {
             };
             return newSteps;
         });
-
-        // Update the display selector immediately if 'element' field changed
-        if (field === 'element') {
-            setChosenSelector(value);
-        }
     }, []);
 
+    const handleElementSelection = useCallback((selector: string) => {
+        console.log("SELECTOR RECEIVED:", selector);
+
+        // This log will now be correct because activeStepIndex is a dependency of this useCallback
+        console.log("Stale Check (Should be correct): activeStepIndex:", activeStepIndex, "Current Steps Count:", steps.length);
+
+        // We use the activeStepIndex captured by this useCallback
+        if (activeStepIndex !== null) {
+            updateStepAttachment(activeStepIndex, 'element', selector);
+        }
+        setIsPicking(false);
+        console.log(`[Picker] Selector assigned: ${selector} to index ${activeStepIndex}`);
+    }, [activeStepIndex, updateStepAttachment, steps.length]); // FIX 2: Added dependencies
+
+    // Listener for messages coming back from creator-picker.ts
     useEffect(() => {
-        const listener = (msg: any) => {
-            if (msg.action === "ELEMENT_SELECTED") {
-                console.log("SELECTOR RECEIVED:", msg.selector);
-                setChosenSelector(msg.selector);
+        const listener = (message: any) => {
+            if (message.action === "ELEMENT_SELECTED") {
+                // Delegate to the useCallback hook, which has fresh state values
+                handleElementSelection(message.selector);
+            } else if (message.action === "PICKER_ABORTED") {
+                // Handle case where user hits ESC or we abort externally
+                setIsPicking(false);
+                console.log("[Picker] Picking mode confirmed aborted by content script.");
             }
         };
-
+        // Add message listener for selection result
         chrome.runtime.onMessage.addListener(listener);
+        // Cleanup listener
         return () => chrome.runtime.onMessage.removeListener(listener);
-    }, []);
-    // Effect to update the display selector when active step changes
-    useEffect(() => {
-        if (activeStepIndex !== null && steps[activeStepIndex]) {
-            setChosenSelector(steps[activeStepIndex].attachTo?.element || "");
-        }
-    }, [activeStepIndex, steps]);
-
-
-    // --- Element Picking Mock Logic ---
-
-    // Function to simulate the content script selecting an element
-    const handleElementSelection = (selector: string) => {
-        if (activeStepIndex === null) {
-            console.error("No active step to assign selector to.");
-            return;
-        }
-
-        // Update both the state and the display
-        updateStepAttachment(activeStepIndex, 'element', selector);
-        setIsPicking(false);
-        console.log(`Element assigned to Step ${activeStepIndex + 1}: ${selector}`);
-    };
+    }, [handleElementSelection]); // FIX 3: Dependency is the callback function itself, which guarantees freshness
 
     // Function to trigger element picking (Mocked)
     const startElementPicker = async () => {
@@ -176,12 +173,10 @@ const SidePanel = () => {
             alert("Please select a step to assign an element.");
             return;
         }
-
         setIsPicking(true);
-        setChosenSelector("Click on the main page to select...");
+        // setChosenSelector("Click on the main page to select...");
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]?.id) return
-
             chrome.tabs.sendMessage(
                 tabs[0].id,
                 { action: "START_ELEMENT_PICKER" },
@@ -194,17 +189,26 @@ const SidePanel = () => {
                 }
             )
         })
-
-        // --- MOCKING CHROME API CALLS ---
-        console.log("Mocking: Sending 'START_ELEMENT_PICKER' message to content script.");
-
     };
 
     // Function to abort picking and send cleanup message (Mocked)
     const handleAbortPicking = async () => {
         setIsPicking(false);
-        setChosenSelector(steps[activeStepIndex]?.attachTo?.element || "");
-        console.log("Mocking: Sending 'ABORT_PICKER' message for cleanup.");
+        // setChosenSelector(steps[activeStepIndex]?.attachTo?.element || "");
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs[0]?.id) return
+            chrome.tabs.sendMessage(
+                tabs[0].id,
+                { action: "STOP_ELEMENT_PICKER" },
+                () => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Error:", chrome.runtime.lastError.message)
+                    } else {
+                        console.log("Picker Stopped")
+                    }
+                }
+            )
+        })
     };
 
 
@@ -216,7 +220,7 @@ const SidePanel = () => {
             const cleanSteps = steps.map((step) => {
                 // IMPORTANT FIX: Use a copy and delete the optional property 
                 // to avoid TypeScript errors related to destructuring optional fields.
-                let stepToSave: StepData = { ...step };
+                let stepToSave: Step = { ...step };
 
                 // Check if 'attachTo' exists and if the element is empty AND 'on' is the default 'right'
                 if (stepToSave.attachTo && !stepToSave.attachTo.element && stepToSave.attachTo.on === 'right') {
@@ -227,8 +231,10 @@ const SidePanel = () => {
                 return stepToSave;
             }).filter(step => step.text.trim() !== '' || step.attachTo?.element); // Final filter to remove empty steps
 
-            const jsonOutput = JSON.stringify(cleanSteps, null, 2);
-            localStorage.setItem(LOCAL_STORAGE_KEY, jsonOutput);
+            // const jsonOutput = JSON.stringify(cleanSteps, null, 2);
+
+            handleCreateCourse("Chatgpt", cleanSteps)
+            // localStorage.setItem(LOCAL_STORAGE_KEY, jsonOutput);
 
             alert("Tour steps saved successfully to your browser's local storage!");
             console.log("Steps saved to Local Storage under key:", LOCAL_STORAGE_KEY);
@@ -262,11 +268,6 @@ const SidePanel = () => {
                 </button>
             </h1>
 
-            {/* Status Indicator (Simple) */}
-            <div className={`text-center p-2 rounded-lg mb-4 text-sm font-medium bg-blue-100 text-blue-700`}>
-                Data is saved directly in your browser's local storage.
-            </div>
-
             {/* Step Management List */}
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps ({steps.length})</h2>
@@ -278,7 +279,7 @@ const SidePanel = () => {
                                 ? 'bg-blue-100 border-blue-500 border-2'
                                 : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
                                 }`}
-                            onClick={() => setActiveStep(index)}
+                            onClick={() => { setActiveStep(index); console.log("index", index) }}
                         >
                             <span className="truncate text-sm font-medium">
                                 {index + 1}. {step.text.substring(0, 30) || "New Step"}
@@ -308,7 +309,6 @@ const SidePanel = () => {
             {activeStep && (
                 <div className="flex flex-col space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-md mb-4">
                     <h3 className="text-md font-bold text-blue-600">Editing Step {activeStepIndex + 1}</h3>
-
                     {/* Step Text Input */}
                     <div>
                         <label htmlFor="step-text" className="block text-sm font-medium text-gray-700 mb-1">
@@ -347,9 +347,8 @@ const SidePanel = () => {
                         <input
                             type="text"
                             readOnly
-                            value={currentElement || (isPicking ? "Click on the main page to select..." : "No element assigned.")}
-                            className={`w-full p-2 border rounded-lg text-sm transition-colors mb-2 ${currentElement ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-white'
-                                }`}
+                            value={activeStep.attachTo?.element}
+                            className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="e.g., #prompt-textarea"
                         />
 
@@ -382,7 +381,7 @@ const SidePanel = () => {
                     {/* Placement Selector */}
                     <div>
                         <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 mb-1">
-                            Guide Alignment (attachTo.on)
+                            Guide Alignment
                         </label>
                         <select
                             id="step-placement"

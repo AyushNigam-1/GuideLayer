@@ -15,7 +15,9 @@ console.info(
     "%c[Creator Picker] Injected successfully on chatgpt.com",
     "color: #4ade80; font-weight: bold; font-size: 14px"
 )
-
+console.log(localStorage.getItem(
+    "courseCreatorSteps"
+))
 /* -------------------------------------------------------
    STATE
 ------------------------------------------------------- */
@@ -111,6 +113,7 @@ const clickHandler = (e: MouseEvent) => {
                     chrome.runtime.lastError.message
                 )
             }
+
         }
     )
 }
@@ -147,6 +150,13 @@ function stopPicker() {
 ------------------------------------------------------- */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === "START_ELEMENT_PICKER") {
+        startPicker()
+        sendResponse({ ok: true })
+        return true
+    }
+})
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === "STOP_ELEMENT_PICKER") {
         startPicker()
         sendResponse({ ok: true })
         return true

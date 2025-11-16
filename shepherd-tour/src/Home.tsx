@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Play, Square, Volume2, Search, BookOpen, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
+import { supabase } from "./config/supabase"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://chatgpt.com/*"]
@@ -25,7 +26,21 @@ export default function Popup() {
     const filteredCourses = courses.filter(course =>
         course.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
+    useEffect(() => {
+        fetchCourses()
+    }, [])
 
+    const fetchCourses = async (): Promise<void> => {
+        try {
+            const { data, error } = await supabase
+                .from("courses")
+                .select("id, title")
+            console.log('Fetched courses:', data)
+            // sendResponse({ success: true, courses })  // Send back to popup/background
+        } catch (error) {
+            console.error('Error fetching courses:', error)
+        }
+    }
     const handleStartTour = async (courseId: string = 'chatgpt') => {
         setIsDisabled(true)
         setStatus("Starting course...")

@@ -10,7 +10,9 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
     "@types/react-router-dom": "^5.3.3",
+    "firebase": "^12.6.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.553.0",
     "plasmo": "0.90.5",
@@ -44,10 +46,6 @@
     ],
     "side_panel": {
       "default_path": "sidepanel.html"
-    },
-    "options_ui": {
-      "page": "options.html",
-      "open_in_tab": false
     },
     "web_accessible_resources": [
       {

@@ -3,6 +3,7 @@ import Shepherd from "shepherd.js"
 import type { Tour, StepOptions, Step } from "shepherd.js"
 import { offset } from "@floating-ui/dom"
 import type { Placement } from "@floating-ui/dom"
+import { supabase } from './config/supabase'
 // import { toggleSidebar } from "./sidebar"
 import '../public/beautiful-tour.css'; // <-- Import your custom CSS
 import "../css/pro-theme.css"
@@ -14,6 +15,8 @@ export const config: PlasmoCSConfig = {
     matches: ["https://chatgpt.com/*"],
     run_at: "document_idle"
 }
+
+console.log("injected content")
 
 // Custom interface for step data
 interface StepData extends Partial<StepOptions> {
@@ -105,11 +108,26 @@ const stopSpeech = (): void => {
     }
 }
 
-type Message = { action: "startTour" | "openCreator" } // 🛑 Update Message type
+type Message = { action: "startTour" | "openCreator" | "fetchCourses" } // 🛑 Update Message type
 type SendResponse = (response?: { success: boolean; error?: string }) => void
 
 chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
-
+    if (message.action === "fetchCourses") {
+        const fetchCourses = async (): Promise<void> => {
+            try {
+                const { data, error } = await supabase
+                    .from("courses")
+                    .select("id, title")
+                console.log('Fetched courses:', data)
+                // sendResponse({ success: true, courses })  // Send back to popup/background
+            } catch (error) {
+                console.error('Error fetching courses:', error)
+                sendResponse({ success: false, error: (error as Error).message })
+            }
+        }
+        fetchCourses()
+        return true  // Async response
+    }
     if (message.action === "startTour") {
         console.log("[Shepherd Injector] Trigger received in content script.")
 
