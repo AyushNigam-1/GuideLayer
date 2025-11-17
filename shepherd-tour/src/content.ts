@@ -20,12 +20,12 @@ console.log("injected content")
 
 // Custom interface for step data
 interface StepData extends Partial<StepOptions> {
-    id: string
+    _id: string
     text: [string] | string
-    attachTo?: {
-        element?: string | HTMLElement
-        on?: Placement
-    }
+
+    element?: string | HTMLElement
+    on?: Placement
+
     buttonText?: string
 }
 const getAssetUrl = (path: string): string => {
@@ -34,41 +34,42 @@ const getAssetUrl = (path: string): string => {
 };
 const inputPromptImageUrl = getAssetUrl('assets/icon.png'); // <-- UPDATE PATH HERE
 // Data-driven steps array - easy to extend/add new steps
-const tourSteps: StepData[] = [
-    {
-        id: 'welcome',
-        text: [
-            '<div class="custom-content-box">' +
-            '<h4>This is the custom HTML title!</h4>' +
-            '<p>The content, including <b>bold text</b>, is rendered.</p>' +
-            `<img src="${inputPromptImageUrl}" style="max-width: 100px; display: block; margin-top: 10px;"/>` +
-            '</div>'
-        ],
-        // text: 'Welcome. Let"s start',
+const tourSteps: StepData[] = []
+// const tourSteps: StepData[] = [
+//     {
+//         _id: 'welcome',
+//         text: [
+//             '<div class="custom-content-box">' +
+//             '<h4>This is the custom HTML title!</h4>' +
+//             '<p>The content, including <b>bold text</b>, is rendered.</p>' +
+//             `<img src="${inputPromptImageUrl}" style="max-width: 100px; display: block; margin-top: 10px;"/>` +
+//             '</div>'
+//         ],
+//         // text: 'Welcome. Let"s start',
 
-        attachTo: undefined, // No attachment → Shepherd auto-centers the step
-        buttonText: 'Start'
-    },
-    {
-        id: 'input-prompt',
-        text: 'Click here to type your message. Try: "Tell me a joke!"',
-        attachTo: {
-            element: '#prompt-textarea', // Selector string
-            on: 'top'
-        },
-        // buttonText: 'Next'/
-    },
-    {
-        id: 'submit-response',
-        text: 'Hit Enter or click Send to generate a response. Watch the magic!',
-        attachTo: {
-            element: '#composer-submit-button', // Send button (adjust if class changes)
-            on: 'left'
-        },
-        buttonText: 'Done!'
-    }
-    // Add more steps easily here
-]
+//         attachTo: undefined, // No attachment → Shepherd auto-centers the step
+//         buttonText: 'Start'
+//     },
+//     {
+//         _id: 'input-prompt',
+//         text: 'Click here to type your message. Try: "Tell me a joke!"',
+//         attachTo: {
+//             element: '#prompt-textarea', // Selector string
+//             on: 'top'
+//         },
+//         // buttonText: 'Next'/
+//     },
+//     {
+//         _id: 'submit-response',
+//         text: 'Hit Enter or click Send to generate a response. Watch the magic!',
+//         attachTo: {
+//             element: '#composer-submit-button', // Send button (adjust if class changes)
+//             on: 'left'
+//         },
+//         buttonText: 'Done!'
+//     }
+//     // Add more steps easily here
+// ]
 
 let speechUtterance: SpeechSynthesisUtterance | null = null
 let isSpeaking: boolean = false
@@ -108,28 +109,38 @@ const stopSpeech = (): void => {
     }
 }
 
-type Message = { action: "startTour" | "openCreator" | "fetchCourses" } // 🛑 Update Message type
-type SendResponse = (response?: { success: boolean; error?: string }) => void
+
+const handleStartTour = async (courseId: string, sendResponse: SendResponse) => {
+    console.log(courseId)
+    try {
+        //     const { data: steps, error } = await supabase
+        //         .from("steps")
+        //         .select("*")
+        //         .eq("course_id", courseId)
+        //         .order("order_index")
+        //     console.log(steps)
+        //     if (error) {
+        //         console.error("Supabase error:", error)
+        //         sendResponse({ success: false })
+        //         return
+        //     }
+
+        // console.log("[Shepherd Injector] Steps:", steps)
+
+        // sendResponse({ success: true, steps })
+    } catch (err) {
+        // console.error("[Content Script] Unexpected error:", err)
+        // sendResponse({ success: false, error: err })
+    }
+}
+
+type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type
+type SendResponse = (response?: { success: boolean; error?: string, data?: any }) => void
 
 chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
-    if (message.action === "fetchCourses") {
-        const fetchCourses = async (): Promise<void> => {
-            try {
-                const { data, error } = await supabase
-                    .from("courses")
-                    .select("id, title")
-                console.log('Fetched courses:', data)
-                // sendResponse({ success: true, courses })  // Send back to popup/background
-            } catch (error) {
-                console.error('Error fetching courses:', error)
-                sendResponse({ success: false, error: (error as Error).message })
-            }
-        }
-        fetchCourses()
-        return true  // Async response
-    }
     if (message.action === "startTour") {
-        console.log("[Shepherd Injector] Trigger received in content script.")
+
+        handleStartTour(message.courseId!, sendResponse)
 
         const checkPageReady = (): void => {
             if (!document.body) {
@@ -165,18 +176,18 @@ chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.M
                         let element: HTMLElement | null = null
                         let on: Placement | undefined = undefined
 
-                        if (stepData.attachTo) {
+                        if (stepData.element) {
                             // Resolve element if it's a selector string
-                            if (typeof stepData.attachTo.element === 'string') {
-                                element = document.querySelector(stepData.attachTo.element) as HTMLElement
-                            } else if (stepData.attachTo.element) {
-                                element = stepData.attachTo.element as HTMLElement
+                            if (typeof stepData.element === 'string') {
+                                element = document.querySelector(stepData.element) as HTMLElement
+                            } else if (stepData.element) {
+                                element = stepData.element as HTMLElement
                             }
 
-                            on = stepData.attachTo.on
+                            on = stepData.on
 
                             // ChatGPT-specific fallback for input
-                            if (!element && stepData.id === 'input-prompt') {
+                            if (!element && stepData._id === 'input-prompt') {
                                 const hiddenTextarea = document.querySelector("textarea") as HTMLTextAreaElement
                                 if (hiddenTextarea) {
                                     element = hiddenTextarea.closest("div.relative") || hiddenTextarea.parentElement
@@ -186,19 +197,19 @@ chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.M
                         }
 
                         if (stepData.attachTo && (!element || !element.offsetParent)) {
-                            console.warn(`[Shepherd Injector] Skipping step ${stepData.id}: Element not found/visible`)
+                            console.warn(`[Shepherd Injector] Skipping step ${stepData._id}: Element not found/visible`)
                             return
                         }
 
                         // Build buttons
                         const buttons = []
-                        if (stepData.id !== 'welcome') {
+                        if (stepData._id !== 'welcome') {
                             buttons.push({ text: 'Back', action: tour.back, classes: 'shepherd-button-secondary' })
                         }
                         buttons.push({
                             text: stepData.buttonText || 'Next',
-                            action: stepData.id === 'submit-response' ? tour.complete : tour.next,
-                            classes: stepData.id === 'submit-response' ? 'shepherd-button-primary' : ''
+                            action: stepData._id === 'submit-response' ? tour.complete : tour.next,
+                            classes: stepData._id === 'submit-response' ? 'shepherd-button-primary' : ''
                         })
 
                         // Build step options
@@ -217,9 +228,9 @@ chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.M
 
                         tour.addStep(stepWithOffset as StepOptions)
                         addedSteps++
-                        console.log(`[Shepherd Injector] Added step: ${stepData.id}`)
+                        console.log(`[Shepherd Injector] Added step: ${stepData._id}`)
                     } catch (stepError) {
-                        console.error(`[Shepherd Injector] Failed to add step ${stepData.id}:`, stepError)
+                        console.error(`[Shepherd Injector] Failed to add step ${stepData._id}:`, stepError)
                     }
                 })
 

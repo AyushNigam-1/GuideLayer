@@ -15,33 +15,52 @@ export default function Popup() {
     const [buttonText, setButtonText] = useState("Start Tour")
     const [enableVoice, setEnableVoice] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
-
+    const [courses, setCourses] = useState([])
     // Sample courses list (expand as needed)
-    const courses = [
-        { id: 'chatgpt', name: 'ChatGPT', icon: Play, description: 'Interactive tour for ChatGPT prompts' },
-        { id: 'figma', name: 'Figma', icon: Square, description: 'Design workflow guide' }
-    ]
+    // const courses = [
+    //     { id: 'chatgpt', name: 'ChatGPT', icon: Play, description: 'Interactive tour for ChatGPT prompts' },
+    //     { id: 'figma', name: 'Figma', icon: Square, description: 'Design workflow guide' }
+    // ]
 
     // Filtered list based on search
     const filteredCourses = courses.filter(course =>
-        course.name.toLowerCase().includes(searchQuery.toLowerCase())
+        course?.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
     useEffect(() => {
         fetchCourses()
+        console.log("use effect")
     }, [])
 
     const fetchCourses = async (): Promise<void> => {
         try {
             const { data, error } = await supabase
                 .from("courses")
-                .select("id, title")
-            console.log('Fetched courses:', data)
+                .select("id, title , description")
+            console.log(data)
+            setCourses(data)
+            // console.log('Fetched courses:', data)
+            // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            //     if (!tabs[0]?.id) return
+
+            //     chrome.tabs.sendMessage(
+            //         tabs[0].id,
+            //         {
+            //             action: "COURSES_LIST",
+            //             payload: data
+            //         },
+            //         () => {
+            //             if (chrome.runtime.lastError) {
+            //                 console.error("Messaging error:", chrome.runtime.lastError.message)
+            //             }
+            //         }
+            //     )
+            // })
             // sendResponse({ success: true, courses })  // Send back to popup/background
         } catch (error) {
             console.error('Error fetching courses:', error)
         }
     }
-    const handleStartTour = async (courseId: string = 'chatgpt') => {
+    const handleStartTour = async (courseId: string) => {
         setIsDisabled(true)
         setStatus("Starting course...")
 
@@ -141,15 +160,15 @@ export default function Popup() {
                     {filteredCourses.length > 0 ? (
                         filteredCourses.map((course) => (
                             <motion.li
-                                key={course.id}
+                                // key={course.id}
                                 whileHover={{ scale: 1.02 }}
                                 className="cursor-pointer"
                                 onClick={() => handleStartTour(course.id)}
                             >
                                 <div className="p-3 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors">
-                                    <course.icon className="w-5 h-5 text-green-500" />
+                                    {/* <course.icon className="w-5 h-5 text-green-500" /> */}
                                     <div>
-                                        <h4 className="font-medium">{course.name}</h4>
+                                        <h4 className="font-medium">{course.title}</h4>
                                         <p className="text-xs text-gray-400">{course.description}</p>
                                     </div>
                                 </div>

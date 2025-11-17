@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare } from "lucide-react"
 import "./index.css"
-import { collection, addDoc } from 'firebase/firestore'
+// import { collection, addDoc } from 'firebase/firestore'
 import { Placement, Step } from "./types"
 import { supabase } from "./config/supabase"
 
@@ -16,20 +16,33 @@ const SidePanel = () => {
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
 
     // chosenSelector is primarily for display/temporary feedback
-    const [chosenSelector, setChosenSelector] = useState("");
 
     const handleCreateCourse = async (title: string, steps: Step[]) => {
+        console.log("got steps ")
         try {
             const { data, error } = await supabase
                 .from("courses")
                 .insert({
-                    // user_id: user.id,
-                    title
-                })
+                    user_id: crypto.randomUUID(),
+                    title,
+                    description: "testing"
+                }).select("id")  // 👈 RETURN THE ID
+                .single()
+            steps = steps.map((step) => ({ ...step, course_id: data?.id }))
+            console.log(steps)
+            const { data: data2, error: error2 } = await supabase.from("steps").insert(
+                steps
+            ).select("")
+            // con
+            console.log("data", data)
+            console.log("data", data2)
+            console.log(error2)
             // const docRef = await addDoc(collection(db, 'courses'), {
             //     title,
             //     steps
             // })
+            console.log("error", error)
+
             console.log('Course added with ID:', data)
             // setStatus('Course created in Firestore!')
         } catch (error) {
@@ -56,10 +69,12 @@ const SidePanel = () => {
 
         // Default initialization if no data found
         const defaultStep: Step = {
-            id: 'step-1',
+            _id: 'step-1',
             text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
             image: '',
-            attachTo: { element: '', on: 'right' } // Set default placement
+            element: '',
+            on: 'right',  // Set default placement
+            order_index: steps.length
         };
         setSteps([defaultStep]);
         setActiveStepIndex(0);
@@ -70,12 +85,15 @@ const SidePanel = () => {
     // --- Handlers for Step Management ---
 
     const addStep = () => {
+
         const newId = `step-${Date.now()}`;
         const newStep: Step = {
-            id: newId,
+            _id: newId,
             text: `Step ${steps.length + 1} instructions.`,
             image: '',
-            attachTo: { element: '', on: 'right' }, // Set default placement
+            element: '',
+            on: 'right', // Set default placement
+            order_index: steps.length
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
 
@@ -104,7 +122,7 @@ const SidePanel = () => {
     };
 
     // Handler for updating top-level fields like text and image
-    const updateStepTextOrImage = useCallback((index: number, field: 'text' | 'image', value: string) => {
+    const updateStep = useCallback((index: number, field: any, value: string) => {
         setSteps(prevSteps => {
             const newSteps = [...prevSteps];
             newSteps[index] = {
@@ -116,24 +134,24 @@ const SidePanel = () => {
     }, []);
 
     // Handler for updating nested fields within attachTo
-    const updateStepAttachment = useCallback((index: number, field: 'element' | 'on', value: string) => {
-        console.log("update", activeStepIndex, field, value)
-        setSteps(prevSteps => {
-            const newSteps = [...prevSteps];
-            // Ensure attachTo structure exists or initialize it with defaults if not
-            const currentAttachTo = newSteps[index].attachTo || { element: '', on: 'right' as Placement };
+    // const updateStepAttachment = useCallback((index: number, field: 'element' | 'on', value: string) => {
+    //     console.log("update", activeStepIndex, field, value)
+    //     setSteps(prevSteps => {
+    //         const newSteps = [...prevSteps];
+    //         // Ensure attachTo structure exists or initialize it with defaults if not
+    //         const currentAttachTo = newSteps[index].attachTo || { element: '', on: 'right' as Placement };
 
-            newSteps[index] = {
-                ...newSteps[index],
-                attachTo: {
-                    ...currentAttachTo,
-                    // Use type assertion for 'on' field since 'value' comes as a string
-                    [field]: field === 'on' ? value as Placement : value,
-                }
-            };
-            return newSteps;
-        });
-    }, []);
+    //         newSteps[index] = {
+    //             ...newSteps[index],
+    //             attachTo: {
+    //                 ...currentAttachTo,
+    //                 // Use type assertion for 'on' field since 'value' comes as a string
+    //                 [field]: field === 'on' ? value as Placement : value,
+    //             }
+    //         };
+    //         return newSteps;
+    //     });
+    // }, []);
 
     const handleElementSelection = useCallback((selector: string) => {
         console.log("SELECTOR RECEIVED:", selector);
@@ -143,11 +161,11 @@ const SidePanel = () => {
 
         // We use the activeStepIndex captured by this useCallback
         if (activeStepIndex !== null) {
-            updateStepAttachment(activeStepIndex, 'element', selector);
+            updateStep(activeStepIndex, 'element', selector);
         }
         setIsPicking(false);
         console.log(`[Picker] Selector assigned: ${selector} to index ${activeStepIndex}`);
-    }, [activeStepIndex, updateStepAttachment, steps.length]); // FIX 2: Added dependencies
+    }, [activeStepIndex, updateStep, steps.length]); // FIX 2: Added dependencies
 
     // Listener for messages coming back from creator-picker.ts
     useEffect(() => {
@@ -215,27 +233,20 @@ const SidePanel = () => {
     // --- Local Storage Save Logic ---
 
     const saveStepsToLocalStorage = () => {
+        console.log("saving steps ")
         try {
             // Filter out steps that are completely empty
             const cleanSteps = steps.map((step) => {
                 // IMPORTANT FIX: Use a copy and delete the optional property 
                 // to avoid TypeScript errors related to destructuring optional fields.
                 let stepToSave: Step = { ...step };
-
-                // Check if 'attachTo' exists and if the element is empty AND 'on' is the default 'right'
-                if (stepToSave.attachTo && !stepToSave.attachTo.element && stepToSave.attachTo.on === 'right') {
-                    // Create a copy without the attachTo property
-                    delete stepToSave.attachTo;
-                }
-
                 return stepToSave;
-            }).filter(step => step.text.trim() !== '' || step.attachTo?.element); // Final filter to remove empty steps
+            }).filter(step => step.text.trim() !== '' || step.element); // Final filter to remove empty steps
 
             // const jsonOutput = JSON.stringify(cleanSteps, null, 2);
-
+            // console.log(cleanSteps)
             handleCreateCourse("Chatgpt", cleanSteps)
             // localStorage.setItem(LOCAL_STORAGE_KEY, jsonOutput);
-
             alert("Tour steps saved successfully to your browser's local storage!");
             console.log("Steps saved to Local Storage under key:", LOCAL_STORAGE_KEY);
 
@@ -246,8 +257,8 @@ const SidePanel = () => {
     };
 
     const activeStep = steps[activeStepIndex];
-    const currentElement = activeStep?.attachTo?.element || "";
-    const currentPlacement = activeStep?.attachTo?.on || "right";
+    const currentElement = activeStep?.element || "";
+    const currentPlacement = activeStep?.on || "right";
 
 
     // Only render the panel content after the initial steps are loaded
@@ -274,7 +285,7 @@ const SidePanel = () => {
                 <div className="max-h-32 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white shadow-inner">
                     {steps.map((step, index) => (
                         <div
-                            key={step.id}
+                            key={step._id}
                             className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${index === activeStepIndex
                                 ? 'bg-blue-100 border-blue-500 border-2'
                                 : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
@@ -285,7 +296,7 @@ const SidePanel = () => {
                                 {index + 1}. {step.text.substring(0, 30) || "New Step"}
                             </span>
                             <div className="flex items-center space-x-2">
-                                {step.attachTo?.element && <CheckSquare className="w-4 h-4 text-green-600" />}
+                                {step.element && <CheckSquare className="w-4 h-4 text-green-600" />}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); deleteStep(index); }}
                                     className="p-1 text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
@@ -318,7 +329,7 @@ const SidePanel = () => {
                             id="step-text"
                             rows={3}
                             value={activeStep.text}
-                            onChange={(e) => updateStepTextOrImage(activeStepIndex, 'text', e.target.value)}
+                            onChange={(e) => updateStep(activeStepIndex, 'text', e.target.value)}
                             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="Enter the guiding text for this step..."
                         />
@@ -333,7 +344,7 @@ const SidePanel = () => {
                             id="step-image"
                             type="text"
                             value={activeStep.image}
-                            onChange={(e) => updateStepTextOrImage(activeStepIndex, 'image', e.target.value)}
+                            onChange={(e) => updateStep(activeStepIndex, 'image', e.target.value)}
                             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="e.g., https://placehold.co/300x150"
                         />
@@ -347,7 +358,8 @@ const SidePanel = () => {
                         <input
                             type="text"
                             readOnly
-                            value={activeStep.attachTo?.element}
+                            value={activeStep.element}
+                            onChange={(e) => updateStep(activeStepIndex, 'element', e.target.value)}
                             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="e.g., #prompt-textarea"
                         />
@@ -386,7 +398,7 @@ const SidePanel = () => {
                         <select
                             id="step-placement"
                             value={currentPlacement}
-                            onChange={(e) => updateStepAttachment(activeStepIndex, 'on', e.target.value)}
+                            onChange={(e) => updateStep(activeStepIndex, 'on', e.target.value)}
                             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                         >
                             <option value="right">Right (Default)</option>
