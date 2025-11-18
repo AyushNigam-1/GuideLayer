@@ -16,3 +16,5 @@ export interface StepData {
     steps: Step[]
     // buttonText and complex text array handling omitted for UI simplicity
 }
+
+export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type

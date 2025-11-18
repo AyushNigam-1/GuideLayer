@@ -8,6 +8,7 @@ import { supabase } from './config/supabase'
 import '../public/beautiful-tour.css'; // <-- Import your custom CSS
 import "../css/pro-theme.css"
 import 'shepherd.js/dist/css/shepherd.css';
+import { Message } from "./types"
 // import "shepherd.js/dist/css/shepherd.css" // Main CSS (includes default theme)
 // import "shepherd.js/dist/css/shepherd-theme-arrows.css" // Optional: Add arrows theme if needed
 
@@ -34,7 +35,7 @@ const getAssetUrl = (path: string): string => {
 };
 const inputPromptImageUrl = getAssetUrl('assets/icon.png'); // <-- UPDATE PATH HERE
 // Data-driven steps array - easy to extend/add new steps
-const tourSteps: StepData[] = []
+let tourSteps: StepData[] = []
 // const tourSteps: StepData[] = [
 //     {
 //         _id: 'welcome',
@@ -111,168 +112,164 @@ const stopSpeech = (): void => {
 
 
 const handleStartTour = async (courseId: string, sendResponse: SendResponse) => {
-    console.log(courseId)
     try {
-        //     const { data: steps, error } = await supabase
-        //         .from("steps")
-        //         .select("*")
-        //         .eq("course_id", courseId)
-        //         .order("order_index")
-        //     console.log(steps)
-        //     if (error) {
-        //         console.error("Supabase error:", error)
-        //         sendResponse({ success: false })
-        //         return
-        //     }
+        const { data: steps, error } = await supabase
+            .from("steps")
+            .select("*")
+            .eq("course_id", courseId)
+            .order("order_index")
+        console.log(steps)
+        tourSteps = steps as StepData[]
 
+        checkPageReady()
+        if (error) {
+            console.error("Supabase error:", error)
+            sendResponse({ success: false })
+            return
+        }
         // console.log("[Shepherd Injector] Steps:", steps)
-
-        // sendResponse({ success: true, steps })
+        sendResponse({ success: true })
     } catch (err) {
-        // console.error("[Content Script] Unexpected error:", err)
-        // sendResponse({ success: false, error: err })
+        console.error("[Content Script] Unexpected error:", err)
+        sendResponse({ success: false })
     }
 }
 
-type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type
 type SendResponse = (response?: { success: boolean; error?: string, data?: any }) => void
 
 chrome.runtime.onMessage.addListener((message: Message, sender: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
     if (message.action === "startTour") {
-
         handleStartTour(message.courseId!, sendResponse)
-
-        const checkPageReady = (): void => {
-            if (!document.body) {
-                console.log("[Shepherd Injector] Waiting for page load...")
-                setTimeout(checkPageReady, 1000)
-                return
-            }
-
-            const hasKeyElements = document.querySelector('[contenteditable="true"]') || document.querySelector('.btn-primary')
-            if (!hasKeyElements) {
-                console.log("[Shepherd Injector] Waiting for ChatGPT elements...")
-                setTimeout(checkPageReady, 1000)
-                return
-            }
-
-            console.log("[Shepherd Injector] Page ready - building multi-step tour...")
-
-            try {
-                const tour: Tour = new Shepherd.Tour({
-                    // useDefaultLook: false,
-                    defaultStepOptions: {
-                        classes: "pro-theme",
-                        scrollTo: true,
-                        cancelIcon: { enabled: true },
-                        // classes: "shepherd-theme-arrows",
-                        // showProgress: true  // Built-in bar
-                    }
-                })
-
-                let addedSteps = 0
-                tourSteps.forEach((stepData: StepData) => {
-                    try {
-                        let element: HTMLElement | null = null
-                        let on: Placement | undefined = undefined
-
-                        if (stepData.element) {
-                            // Resolve element if it's a selector string
-                            if (typeof stepData.element === 'string') {
-                                element = document.querySelector(stepData.element) as HTMLElement
-                            } else if (stepData.element) {
-                                element = stepData.element as HTMLElement
-                            }
-
-                            on = stepData.on
-
-                            // ChatGPT-specific fallback for input
-                            if (!element && stepData._id === 'input-prompt') {
-                                const hiddenTextarea = document.querySelector("textarea") as HTMLTextAreaElement
-                                if (hiddenTextarea) {
-                                    element = hiddenTextarea.closest("div.relative") || hiddenTextarea.parentElement
-                                    console.log("[Shepherd Injector] Using fallback for input:", element)
-                                }
-                            }
-                        }
-
-                        if (stepData.attachTo && (!element || !element.offsetParent)) {
-                            console.warn(`[Shepherd Injector] Skipping step ${stepData._id}: Element not found/visible`)
-                            return
-                        }
-
-                        // Build buttons
-                        const buttons = []
-                        if (stepData._id !== 'welcome') {
-                            buttons.push({ text: 'Back', action: tour.back, classes: 'shepherd-button-secondary' })
-                        }
-                        buttons.push({
-                            text: stepData.buttonText || 'Next',
-                            action: stepData._id === 'submit-response' ? tour.complete : tour.next,
-                            classes: stepData._id === 'submit-response' ? 'shepherd-button-primary' : ''
-                        })
-
-                        // Build step options
-                        const stepWithOffset: Partial<StepOptions> = {
-                            ...stepData,
-                            attachTo: stepData.attachTo ? { element: element!, on } : undefined,
-                            buttons
-                        }
-
-                        // Add offset only for attached steps (not centered welcome)
-                        if (stepData.attachTo) {
-                            ; (stepWithOffset as any).floatingUIOptions = {
-                                middleware: [offset(12)]
-                            }
-                        }
-
-                        tour.addStep(stepWithOffset as StepOptions)
-                        addedSteps++
-                        console.log(`[Shepherd Injector] Added step: ${stepData._id}`)
-                    } catch (stepError) {
-                        console.error(`[Shepherd Injector] Failed to add step ${stepData._id}:`, stepError)
-                    }
-                })
-
-                if (addedSteps === 0) {
-                    throw new Error('No valid steps could be added')
-                }
-                tour.on('show', (event: { step: Step }) => {  // Fixed: Now uses imported Event type
-                    const stepText: string = event.step.options.text as string
-                    speakText(stepText) // Narrate on show
-                })
-
-                tour.on('hide', () => {
-                    stopSpeech() // Pause on next/back
-                })
-
-                tour.on('complete', () => {
-                    stopSpeech() // Stop on finish
-                })
-
-                console.log(`[Shepherd Injector] Tour configured with ${addedSteps} steps, starting in 500ms...`)
-
-                setTimeout(() => {
-                    try {
-                        tour.start()
-                        console.log("[Shepherd Injector] Multi-step tour started successfully!")
-                        sendResponse({ success: true })
-                    } catch (e) {
-                        const error = e as Error
-                        console.error("[Shepherd Injector] tour.start() error:", error)
-                        sendResponse({ success: false, error: error.message })
-                    }
-                }, 500)
-
-            } catch (error) {
-                const err = error as Error
-                console.error("[Shepherd Injector] Tour creation failed:", err)
-                sendResponse({ success: false, error: err.message })
-            }
-        }
-
-        checkPageReady()
+        return true // Async response
     }
 
-    return true // Async response
 })
+
+const checkPageReady = (): void => {
+    if (!document.body) {
+        console.log("[Shepherd Injector] Waiting for page load...")
+        setTimeout(checkPageReady, 1000)
+        return
+    }
+
+    const hasKeyElements = document.querySelector('[contenteditable="true"]') || document.querySelector('.btn-primary')
+    if (!hasKeyElements) {
+        console.log("[Shepherd Injector] Waiting for ChatGPT elements...")
+        setTimeout(checkPageReady, 1000)
+        return
+    }
+
+    console.log("[Shepherd Injector] Page ready - building multi-step tour...")
+
+    try {
+        const tour: Tour = new Shepherd.Tour({
+            // useDefaultLook: false,
+            defaultStepOptions: {
+                classes: "pro-theme",
+                scrollTo: true,
+                cancelIcon: { enabled: true },
+                // classes: "shepherd-theme-arrows",
+                // showProgress: true  // Built-in bar
+            }
+        })
+
+        let addedSteps = 0
+
+        tourSteps.forEach((stepData: any) => {
+            try {
+                let element: HTMLElement | null = null;
+                let attachToOn: Placement = 'right'; // default
+
+                // Use the correct fields from your DB structure
+                const selector = stepData.element?.trim();
+                const placement = stepData.on || 'right';
+
+                if (selector) {
+                    element = document.querySelector(selector) as HTMLElement;
+
+                    // Fallback for ChatGPT-specific cases
+                    if (!element && stepData._id === 'input-prompt') {
+                        const textarea = document.querySelector('textarea');
+                        if (textarea?.parentElement) {
+                            element = textarea.parentElement.closest('div') || textarea.parentElement;
+                        }
+                    }
+
+                    if (!element) {
+                        console.warn(`[Tour] Element not found for selector: ${selector} (step: ${stepData._id})`);
+                    }
+                }
+
+                // Build buttons
+                const buttons: any[] = [];
+                if (stepData._id !== 'welcome') {
+                    buttons.push({ text: 'Back', action: tour.back, classes: 'shepherd-button-secondary' });
+                }
+                buttons.push({
+                    text: stepData.buttonText || 'Next',
+                    action: stepData._id === 'submit-response' ? tour.complete : tour.next,
+                    classes: stepData._id === 'submit-response' ? 'shepherd-button-primary' : ''
+                });
+
+                // Correct attachTo structure
+                const stepConfig: Partial<StepOptions> = {
+                    id: stepData._id,
+                    text: stepData.text,
+                    buttons
+                };
+
+                if (element && element.offsetParent) {
+                    stepConfig.attachTo = { element, on: placement as Placement };
+                    stepConfig.floatingUIOptions = { middleware: [offset(12)] };
+                } else if (stepData._id === 'welcome') {
+                    // Welcome step — centered
+                    stepConfig.attachTo = undefined;
+                } else {
+                    console.warn(`[Tour] Step skipped due to missing element: ${stepData._id}`);
+                    return; // skip this step
+                }
+
+                tour.addStep(stepConfig as StepOptions);
+                addedSteps++;
+                console.log(`[Tour] Added step: ${stepData._id} → ${selector || 'centered'}`);
+            } catch (err) {
+                console.error("Error adding step:", stepData._id, err);
+            }
+        });
+
+        if (addedSteps === 0) {
+            throw new Error('No valid steps could be added')
+        }
+        tour.on('show', (event: { step: Step }) => {  // Fixed: Now uses imported Event type
+            const stepText: string = event.step.options.text as string
+            speakText(stepText) // Narrate on show
+        })
+
+        tour.on('hide', () => {
+            stopSpeech() // Pause on next/back
+        })
+
+        tour.on('complete', () => {
+            stopSpeech() // Stop on finish
+        })
+
+        console.log(`[Shepherd Injector] Tour configured with ${addedSteps} steps, starting in 500ms...`)
+
+        setTimeout(() => {
+            try {
+                tour.start()
+                console.log("[Shepherd Injector] Multi-step tour started successfully!")
+                // sendResponse({ success: true })
+            } catch (e) {
+                const error = e as Error
+                console.error("[Shepherd Injector] tour.start() error:", error)
+                // sendResponse({ success: false, error: error.message })
+            }
+        }, 500)
+
+    } catch (error) {
+        const err = error as Error
+        console.error("[Shepherd Injector] Tour creation failed:", err)
+        // sendResponse({ success: false, error: err.message })
+    }
+}

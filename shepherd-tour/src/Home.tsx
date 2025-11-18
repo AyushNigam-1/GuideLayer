@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
 import { supabase } from "./config/supabase"
+import { Message } from "./types"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://chatgpt.com/*"]
@@ -63,36 +64,25 @@ export default function Popup() {
     const handleStartTour = async (courseId: string) => {
         setIsDisabled(true)
         setStatus("Starting course...")
-
         try {
+            // 1. Get the active tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-
-            if (!tab.url || !tab.url.startsWith("https://chatgpt.com/")) {
-                setStatus("Please open ChatGPT.com first!")
-                setIsDisabled(false)
+            if (!tab?.id) {
+                setStatus("No active tab found")
                 return
             }
-
-            setStatus("Injecting tour...")
-
-            const response = await chrome.runtime.sendMessage({
+            // 2. Send DIRECTLY to content script — full object preserved!
+            const response = await chrome.tabs.sendMessage(tab.id, {
                 action: "startTour",
-                courseId,  // Pass course ID for dynamic tours later
+                courseId,
                 enableVoice
             })
-
+            // response comes back from content script
             if (response?.success) {
                 setStatus("Tour started! 🎉")
-                setButtonText("Tour Active")
-                setIsDisabled(true)
-                setTimeout(() => setStatus(""), 3000)
-            } else {
-                setStatus(response?.error || "Failed to start tour. Check console.")
-                setIsDisabled(false)
             }
-        } catch (error: unknown) {
-            setStatus("Error: " + (error as Error).message)
-            setIsDisabled(false)
+        } catch (err) {
+            console.error("Direct message failed:", err)
         }
     }
     const handleCreateNew = async () => {
@@ -199,7 +189,7 @@ export default function Popup() {
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => handleStartTour()}
+                    // onClick={() => handleStartTour()}
                     disabled={isDisabled}
                     className={`w-full py-3 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 ${isDisabled
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'

@@ -46,12 +46,26 @@ document.head.appendChild(style)
 /* -------------------------------------------------------
    SELECTOR BUILDER (simple but stable)
 ------------------------------------------------------- */
+/**
+ * Generates a stable CSS selector by prioritizing IDs and escaping colons in class names
+ * for compatibility with Tailwind CSS utility classes (e.g., sm:flex -> sm\:flex).
+ */
 function buildSelector(el: HTMLElement): string {
+    // 1. If the element has an ID, use it immediately (most specific)
     if (el.id) return `#${el.id}`
 
-    const cls = [...el.classList].map((c) => `.${c}`).join("")
+    // 2. Escape colons in class names and prefix with dot
+    const cls = [...el.classList]
+        .map((className) => {
+            // CRITICAL FIX: Escape colons used by Tailwind (e.g., disabled:text-gray-50 becomes disabled\:text-gray-50)
+            const escapedClass = className.replace(/:/g, '\\:')
+            return `.${escapedClass}`
+        })
+        .join("")
+
     const base = el.tagName.toLowerCase() + cls
 
+    // 3. Anchor to nearest parent ID (Stability)
     let parent = el.parentElement
     let depth = 0
 
@@ -61,7 +75,8 @@ function buildSelector(el: HTMLElement): string {
         depth++
     }
 
-    return base
+    // 4. Return the fully escaped selector, trimmed of any accidental whitespace
+    return base.trim()
 }
 
 /* -------------------------------------------------------
