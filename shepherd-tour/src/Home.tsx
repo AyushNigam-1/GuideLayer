@@ -4,7 +4,6 @@ import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
 import { supabase } from "./config/supabase"
-import { Message } from "./types"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://chatgpt.com/*"]

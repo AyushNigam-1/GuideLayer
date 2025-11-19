@@ -1,3 +1,5 @@
+import { StepOptions } from "shepherd.js";
+
 export type Placement = 'top' | 'right' | 'bottom' | 'left';
 
 export interface Step {
@@ -8,6 +10,14 @@ export interface Step {
     on: Placement;  // The guide popup alignment
     order_index: number
     course_id?: string
+}
+
+export interface StepData extends Partial<StepOptions> {
+    _id: string
+    text: [string] | string
+    element?: string | HTMLElement
+    on?: Placement
+    buttonText?: string
 }
 
 export interface StepData {

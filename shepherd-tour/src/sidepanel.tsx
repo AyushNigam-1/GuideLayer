@@ -245,7 +245,7 @@ const SidePanel = () => {
 
             // const jsonOutput = JSON.stringify(cleanSteps, null, 2);
             // console.log(cleanSteps)
-            handleCreateCourse("Chatgpt3", cleanSteps)
+            handleCreateCourse("Chatgpt5", cleanSteps)
             // localStorage.setItem(LOCAL_STORAGE_KEY, jsonOutput);
             alert("Tour steps saved successfully to your browser's local storage!");
             console.log("Steps saved to Local Storage under key:", LOCAL_STORAGE_KEY);
