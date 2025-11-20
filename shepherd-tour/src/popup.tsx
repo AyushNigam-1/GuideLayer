@@ -1,11 +1,11 @@
 import { createHashRouter, RouterProvider } from "react-router-dom"
-import { routes } from "./routes"  // Import routes here
-import type { PlasmoCSConfig } from "plasmo"
+import { routes } from "./routes"
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const router = createHashRouter(routes)
-export const config: PlasmoCSConfig = {
-  matches: ["https://chatgpt.com/*"]
-}
 
+const queryClient = new QueryClient();
 export default function Popup() {
-  return <RouterProvider router={router} />
+  return <QueryClientProvider client={queryClient}>
+    <RouterProvider router={router} />
+  </QueryClientProvider>
 }

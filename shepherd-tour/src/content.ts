@@ -11,10 +11,10 @@ import { Message, StepData } from "./types"
 // import "shepherd.js/dist/css/shepherd.css" // Main CSS (includes default theme)
 // import "shepherd.js/dist/css/shepherd-theme-arrows.css" // Optional: Add arrows theme if needed
 
-export const config: PlasmoCSConfig = {
-    matches: ["https://chatgpt.com/*"],
-    run_at: "document_idle"
-}
+// export const config: PlasmoCSConfig = {
+//     matches: ["<all_urls>"],
+//     run_at: "document_idle"
+// }
 
 console.log("injected content")
 
@@ -96,12 +96,12 @@ const checkPageReady = (): void => {
         return
     }
 
-    const hasKeyElements = document.querySelector('[contenteditable="true"]') || document.querySelector('.btn-primary')
-    if (!hasKeyElements) {
-        console.log("[Shepherd Injector] Waiting for ChatGPT elements...")
-        setTimeout(checkPageReady, 1000)
-        return
-    }
+    // const hasKeyElements = document.querySelector('[contenteditable="true"]') || document.querySelector('.btn-primary')
+    // if (!hasKeyElements) {
+    //     console.log("[Shepherd Injector] Waiting for ChatGPT elements...")
+    //     setTimeout(checkPageReady, 1000)
+    //     return
+    // }
 
     console.log("[Shepherd Injector] Page ready - building multi-step tour...")
 

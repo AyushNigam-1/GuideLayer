@@ -9,14 +9,13 @@ const browserAPI = typeof browser !== "undefined" ? browser : chrome
 
 // Listen for messages from popup
 browserAPI.runtime.onMessage.addListener(
-    (message: StartTourMessage, sender: chrome.runtime.MessageSender, sendResponse: (response?: StartTourResponse) => void) => {
+    (message: StartTourMessage, _: chrome.runtime.MessageSender, sendResponse: (response?: StartTourResponse) => void) => {
         if (message.action === "startTour") {
             browserAPI.tabs
                 .query({ active: true, currentWindow: true })
                 .then((tabs: chrome.tabs.Tab[]) => {
                     const tab = tabs[0]
-                    if (tab.url && tab.url.startsWith("https://chatgpt.com/")) {
-                        // Send to content script
+                    if (tab.url) {
                         browserAPI.tabs
                             .sendMessage(tab.id!, { action: "startTour" })
                             .then((response: StartTourResponse | undefined) => sendResponse(response || { success: true }))
@@ -35,7 +34,7 @@ browserAPI.runtime.onMessage.addListener(
 
 // Icon click fallback
 browserAPI.action.onClicked.addListener((tab: chrome.tabs.Tab) => {
-    if (tab.url && tab.url.startsWith("https://chatgpt.com/")) {
+    if (tab.url) {
         browserAPI.tabs.sendMessage(tab.id!, { action: "startTour" })
     }
 })

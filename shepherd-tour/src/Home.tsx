@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { Play, Square, Volume2, Search, BookOpen, Plus } from "lucide-react"
+import { Play, SaveIcon, Search, BookOpen, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import './index.css'  // Tailwind import
 import { supabase } from "./config/supabase"
-
+// import {} from "lucide-react"
 export const config: PlasmoCSConfig = {
-    matches: ["https://chatgpt.com/*"]
+    matches: ["<all_urls>"]
 }
 
 export default function Popup() {
@@ -16,13 +16,7 @@ export default function Popup() {
     const [enableVoice, setEnableVoice] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [courses, setCourses] = useState([])
-    // Sample courses list (expand as needed)
-    // const courses = [
-    //     { id: 'chatgpt', name: 'ChatGPT', icon: Play, description: 'Interactive tour for ChatGPT prompts' },
-    //     { id: 'figma', name: 'Figma', icon: Square, description: 'Design workflow guide' }
-    // ]
 
-    // Filtered list based on search
     const filteredCourses = courses.filter(course =>
         course?.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -38,24 +32,6 @@ export default function Popup() {
                 .select("id, title , description")
             console.log(data)
             setCourses(data)
-            // console.log('Fetched courses:', data)
-            // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            //     if (!tabs[0]?.id) return
-
-            //     chrome.tabs.sendMessage(
-            //         tabs[0].id,
-            //         {
-            //             action: "COURSES_LIST",
-            //             payload: data
-            //         },
-            //         () => {
-            //             if (chrome.runtime.lastError) {
-            //                 console.error("Messaging error:", chrome.runtime.lastError.message)
-            //             }
-            //         }
-            //     )
-            // })
-            // sendResponse({ success: true, courses })  // Send back to popup/background
         } catch (error) {
             console.error('Error fetching courses:', error)
         }
@@ -171,18 +147,7 @@ export default function Popup() {
                 </ul>
 
                 {/* Voice Toggle (below list) */}
-                <div className="flex items-center gap-2 p-2 bg-gray-800 rounded-md mb-4">
-                    <Volume2 className="w-4 h-4 text-gray-400" />
-                    <label className="text-xs font-medium cursor-pointer flex items-center">
-                        <input
-                            type="checkbox"
-                            checked={enableVoice}
-                            onChange={(e) => setEnableVoice(e.target.checked)}
-                            className="mr-1 rounded"
-                        />
-                        Enable Voice Narration
-                    </label>
-                </div>
+
 
                 {/* Global Start Button (for quick access) */}
                 <motion.button

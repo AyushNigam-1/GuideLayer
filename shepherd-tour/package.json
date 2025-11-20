@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
+    "@tanstack/react-query": "^5.90.10",
     "@types/react-router-dom": "^5.3.3",
     "css-selector-generator": "^3.7.0",
     "firebase": "^12.6.0",
@@ -38,7 +39,7 @@
   },
   "manifest": {
     "host_permissions": [
-      "https://*/*"
+      "<all_urls>"
     ],
     "permissions": [
       "sidePanel",
@@ -54,7 +55,7 @@
           "assets/icon.png"
         ],
         "matches": [
-          "https://chatgpt.com/*"
+          "<all_urls>"
         ]
       }
     ]
