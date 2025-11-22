@@ -83,6 +83,7 @@ type SendResponse = (response?: { success: boolean; error?: string, data?: any }
 
 chrome.runtime.onMessage.addListener((message: Message, _: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
     if (message.action === "startTour") {
+        console.log("working lol")
         handleStartTour(message.courseId!, sendResponse)
         return true
     }

@@ -3,10 +3,12 @@ import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine } from "lucide-rea
 import "./index.css"
 import { Step } from "./types"
 import { supabase } from "./config/supabase"
+// import { }
 
 const SidePanel = () => {
     // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
+    const [isLoading, setLoading] = useState(false)
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -19,7 +21,7 @@ const SidePanel = () => {
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
 
     const handleCreateCourse = async (steps: Step[]) => {
-        console.log("got steps ")
+        setLoading(true)
         try {
             const { data } = await supabase
                 .from("courses")
@@ -27,16 +29,18 @@ const SidePanel = () => {
                     user_id: crypto.randomUUID(),
                     title: metadata.title,
                     description: metadata.description,
-                }).select("id")  // 👈 RETURN THE ID
+                }).select("id")
                 .single()
             steps = steps.map((step) => ({ ...step, course_id: data?.id }))
-            const { data: data2, error: error2 } = await supabase.from("steps").insert(
+            await supabase.from("steps").insert(
                 steps
             ).select("")
-            console.log("data", data2)
-            console.log(error2)
+            console.log(data)
         } catch (error) {
             console.error('Error adding course:', error)
+        }
+        finally {
+            setLoading(false)
         }
     }
 
@@ -51,10 +55,7 @@ const SidePanel = () => {
             order_index: steps.length
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
-
-        console.log("before active steps", activeStepIndex)
-        setActiveStepIndex(steps.length); // Set the new step as active
-        console.log(steps.length)
+        setActiveStepIndex(steps.length);
     };
 
     const deleteStep = (index: number) => {
@@ -155,7 +156,7 @@ const SidePanel = () => {
                 let stepToSave: Step = { ...step };
                 return stepToSave;
             }).filter(step => step.text.trim() !== '' || step.element); // Final filter to remove empty 
-            handleCreateCourse(metadata.title, cleanSteps)
+            handleCreateCourse(cleanSteps)
         } catch (error) {
             console.error("Error saving steps to Local Storage:", error);
             alert("Failed to save steps. Check the console for details.");
@@ -174,12 +175,7 @@ const SidePanel = () => {
 
     return (
         <div className="p-4 flex flex-col h-full bg-gray-50 font-mono space-y-4">
-            <div className="text-xl font-bold  flex items-center justify-between">
-                <h3 className="text-lg font-bold ">Course Details </h3>
-                <button onClick={handleAbortPicking} className="text-gray-500 hover:text-red-500 transition-colors" disabled={!isPicking}>
-                    <X className="w-5 h-5" />
-                </button>
-            </div>
+            <h3 className="text-lg font-bold ">New Guide</h3>
             <Input label="Course Title" value={metadata.title} onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))} />
             <Input label="Course Title" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
             {/* </div> */}
@@ -287,13 +283,25 @@ const SidePanel = () => {
                 </button>
                 <button
                     onClick={saveSteps}
-                    className="w-full py-2 text-sm bg-purple-600 text-white rounded-lg font-semibold shadow-lg hover:bg-purple-700 transition-colors flex items-center gap-2 justify-center"
+                    className="w-full py-2 text-sm bg-purple-600 text-white rounded-lg font-semibold shadow-lg hover:bg-purple-700 transition-colors "
                     disabled={steps.length === 0}
                 >
-                    <ArrowDownToLine size={15} />                    Save
+                    {
+                        isLoading ?
+                            <div className='flex justify-center col-span-4 items-center '>
+                                <svg className="animate-spin  w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                            :
+                            <span className="flex items-center gap-2 justify-center">
+                                <ArrowDownToLine size={15} />  Save
+                            </span>
+                    }
                 </button>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
 
@@ -301,7 +309,7 @@ export default SidePanel
 
 
 
-const Input = ({ label, value, onChange, isTextArea }) => {
+const Input = ({ label, value, onChange, isTextArea }: { label: string, value: string, onChange: (e: any) => void, isTextArea?: boolean }) => {
     return <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
             {label}
@@ -315,7 +323,6 @@ const Input = ({ label, value, onChange, isTextArea }) => {
             placeholder="Enter the guiding text for this step..."
         /> : <input
             type="text"
-            readOnly
             value={value}
             onChange={(e) => onChange(e)}
             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
