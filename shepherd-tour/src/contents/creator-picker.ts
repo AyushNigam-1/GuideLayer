@@ -1,10 +1,4 @@
-import type { PlasmoCSConfig } from "plasmo"
 import { getCssSelector } from "css-selector-generator";
-
-// export const config: PlasmoCSConfig = {
-//     matches: ["<all_urls>"],
-//     run_at: "document_idle"
-// }
 
 console.info(
     "%c[Creator Picker] Injected successfully on chatgpt.com",

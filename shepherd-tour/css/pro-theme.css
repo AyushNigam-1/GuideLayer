@@ -1,121 +1,111 @@
-/*
- * PROFESSIONAL SHEPHERD.JS THEME
- * Inspired by modern UI design systems (e.g., Bootstrap, Material)
- */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap");
 
-/* ===================================================
-   1. MAIN STEP CONTAINER (.shepherd-element)
-   =================================================== */
-.pro-theme.shepherd-element {
-    /* Subtle border and shadow for a "floating card" effect */
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    max-width: 350px;
+.shepherd-element {
+    font-family: "Noto Sans", sans-serif !important;
+    padding: 0px;
+    border-radius: 8px !important;
+    position: relative;
+    box-shadow: rgba(71, 75, 255, 0.075) 0px 2px 3px !important;
+    background: #111827 !important;
+    z-index: 1000;
+    color: white !important;
 }
 
-/* ===================================================
-   2. CONTENT AND HEADER
-   =================================================== */
-
-/* Header Area */
-.pro-theme .shepherd-header {
-    background-color: #f5f5f5;
-    /* Light gray header */
-    color: #333;
-    padding: 12px 16px;
-    border-radius: 7px 7px 0 0;
-    border-bottom: 1px solid #e0e0e0;
+.shepherd-theme-custom .shepherd-text {
+    padding: 0px;
 }
 
-/* Title Text */
-.pro-theme .shepherd-title {
-    font-size: 1.15em;
-    font-weight: 600;
-    /* Semi-bold */
-    margin: 0;
+.shepherd-theme-custom .shepherd-footer {
+    border-radius: 0px;
 }
 
-/* Close/Cancel Icon */
-.pro-theme .shepherd-cancel-icon {
-    color: #888;
-    transition: color 0.15s ease-in-out;
+.t3-card {
+    padding: 15px;
+
 }
 
-.pro-theme .shepherd-cancel-icon:hover {
-    color: #444;
+.t3-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-/* Content/Body Area */
-.pro-theme .shepherd-content {
-    background-color: #ffffff;
-    color: #555;
-    padding: 16px;
-    line-height: 1.5;
-}
-
-/* ===================================================
-   3. BUTTONS (FOOTER)
-   =================================================== */
-
-/* Footer */
-.pro-theme .shepherd-footer {
-    padding: 12px 16px;
-    border-top: 1px solid #e0e0e0;
-    background-color: #f9f9f9;
-    border-radius: 0 0 7px 7px;
-    /* This Shepherd class handles button alignment */
-    /* .shepherd-buttons */
-}
-
-/* Button Base Style */
-.pro-theme .shepherd-button {
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    font-size: 0.9em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-/* Primary/Next Button */
-.pro-theme .shepherd-button:last-child {
-    background-color: #007bff;
-    /* Primary Blue */
+.t3-card-title {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 24px;
+    /* margin-bottom: 10px; */
     color: white;
 }
 
-.pro-theme .shepherd-button:last-child:hover {
-    background-color: #0056b3;
+.t3-card-text {
+    color: white;
+
+    font-size: 12px;
+    font-weight: 300;
 }
 
-/* Secondary/Back/Skip Button */
-.pro-theme .shepherd-button:not(:last-child) {
-    background-color: transparent;
-    color: #555;
-    border: 1px solid #ccc;
+.t3-card-image {
+    color: #5c4033;
+    width: 60px;
+    height: 60px;
+    background-color: navajowhite;
+    border-radius: 50px;
+    padding: 10px;
+    margin-bottom: 10px;
 }
 
-.pro-theme .shepherd-button:not(:last-child):hover {
-    background-color: #eee;
-    color: #333;
+.shepherd-theme-custom .shepherd-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px;
 }
 
-/* ===================================================
-   4. ARROW/TIP
-   =================================================== */
-
-/* Arrow color should match the header/content for a clean look */
-.pro-theme .shepherd-arrow:before {
-    /* Tip color usually matches the step background for themes */
-    background-color: #ffffff;
+.shepherd-theme-custom .shepherd-button {
+    all: unset !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    background-color: #1f2937 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
 }
 
-/* Border of the arrow */
-.pro-theme.shepherd-element.shepherd-has-tip .shepherd-tip::before,
-.pro-theme.shepherd-element.shepherd-has-tip .shepherd-tip::after {
-    box-shadow: none;
-    /* Often helpful to remove default shadows */
+.shepherd-theme-custom .shepherd-button:hover {
+    color: #5c4033 !important;
+    background-color: white !important;
+}
+
+.shepherd-theme-custom .shepherd-button .shepherd-button-secondary {
+    color: #5c4033 !important;
+    background-color: white !important;
+}
+
+.shepherd-arrow::before {
+    background: #111827 !important;
+}
+
+.close-btn {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    height: 20px;
+    width: 20px;
+    color: white;
+    background-color: white;
+    border-radius: 100%;
+    padding: 4px;
+    color: #5c4033;
+
+}
+
+.close-btn:hover {
+    cursor: pointer;
 }
