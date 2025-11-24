@@ -220,8 +220,8 @@ const checkPageReady = (): void => {
             const closeBtn = document.querySelector('.close-btn')
             if (closeBtn) {
                 tour.on('show', (event: { step: Step }) => {
-                    const stepText: string = event.step.options.text as string
-                    speakText(stepText) // Narrate on show
+                    // const stepText: string = event.step.options.text as string
+                    // speakText(stepText) // Narrate on show
 
                     // CRITICAL: Add click handler to close button
                     const closeBtn = document.querySelector('.close-btn')

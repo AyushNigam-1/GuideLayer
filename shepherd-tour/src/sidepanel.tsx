@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
-import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine } from "lucide-react"
+import { useState, useEffect, useCallback, ChangeEvent } from "react"
+import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine, LinkIcon, Upload } from "lucide-react"
 import "./index.css"
 import { Step } from "./types"
 import { supabase } from "./config/supabase"
@@ -9,6 +9,9 @@ const SidePanel = () => {
     // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
     const [isLoading, setLoading] = useState(false)
+    const [isUploadingImage, setIsUploadingImage] = useState(false); // New state for image upload status
+    const [imageUploadType, setImageUploadType] = useState<'url' | 'file'>('url'); // New state to switch between URL and File upload
+
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -149,7 +152,53 @@ const SidePanel = () => {
             )
         })
     };
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
 
+        setIsUploadingImage(true);
+        // Create a unique path for the file in storage
+        const folderPath = `public/steps/${crypto.randomUUID()}-${file.name}`;
+
+        try {
+            // 1. Upload file to Supabase Storage
+            // Assuming a storage bucket named 'images' is configured
+            const { data, error } = await supabase.storage
+                .from('images') // Use a suitable bucket name, 'images' is a common default
+                .upload(folderPath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            // 2. Get the public URL for the uploaded file
+            const { data: publicUrlData } = supabase.storage
+                .from('images')
+                .getPublicUrl(folderPath);
+
+            const publicUrl = publicUrlData.publicUrl;
+
+            // 3. Update the active step's image field with the public URL
+            if (activeStepIndex !== null) {
+                updateStep(activeStepIndex, 'image', publicUrl);
+            }
+            console.log("Image uploaded and step updated with URL:", publicUrl);
+
+        } catch (error: any) {
+            console.error('Error uploading file:', error.message || error);
+            // Using console.error instead of alert as per general instructions
+            console.error(`Image upload failed: ${error.message || 'Unknown error'}`);
+        } finally {
+            setIsUploadingImage(false);
+            // Reset the file input value to allow uploading the same file again
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    };
     const saveSteps = () => {
         try {
             const cleanSteps = steps.map((step) => {
@@ -172,14 +221,30 @@ const SidePanel = () => {
             </div>
         );
     }
+    const ImagePreview = ({ url }: { url: string }) => {
+        if (!url) return null;
+        return (
+            <div className="mt-3 relative">
+                <p className="text-xs font-medium text-gray-700 mb-1">Image Preview</p>
+                <img
+                    src={url}
+                    alt="Step Visual Guide"
+                    className="w-full h-auto object-contain rounded-lg border border-gray-300 shadow-sm"
+                    onError={(e) => {
+                        (e.target as HTMLImageElement).onerror = null;
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/400x150/ef4444/ffffff?text=Image+Load+Error';
+                    }}
+                />
+            </div>
+        );
+    };
 
     return (
         <div className="p-4 flex flex-col h-full bg-gray-50 font-mono space-y-4">
             <h3 className="text-lg font-bold ">New Guide</h3>
-            <Input label="Course Title" value={metadata.title} onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))} />
-            <Input label="Course Title" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
-            {/* </div> */}
-            {/* Step Management List */}
+            <hr />
+            <Input label="Course Title" value={metadata.title} onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))} placeholder="e.g Chatgpt or Youtube etc" />
+            <Input label="Course Title" placeholder="e.g Course Description here" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
                 <div className="max-h-32 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white shadow-inner">
@@ -212,17 +277,69 @@ const SidePanel = () => {
                 <div className="flex flex-col space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-md mb-4">
                     <h3 className="text-md font-bold text-blue-600">Editing Step {activeStepIndex + 1}</h3>
                     <Input label="Text" value={activeStep.text}
-                        onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)} isTextArea={true} />
+                        onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)} placeholder="Write Guide text here" isTextArea={true} />
 
-                    <Input label="Image URL (Optional)" value={activeStep.image} onChange={(e: any) => updateStep(activeStepIndex, 'image', e.target.value)} />
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Step Visual (Optional)</label>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setImageUploadType('url')}
+                                className={`w-full py-1  rounded-lg font-semibold flex items-center justify-center gap-2  transition-colors ${imageUploadType === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                disabled={isUploadingImage}
+                            >
+                                <LinkIcon className="w-4" /> File URL
+                            </button>
+                            <button
+                                onClick={() => setImageUploadType('file')}
+                                className={`w-full py-1 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors ${imageUploadType === 'file' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                disabled={isUploadingImage}
+                            >
+                                <Upload className="w-4" /> Upload File
+                            </button>
+                        </div>
 
-                    <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} />
+                        {imageUploadType === 'url' ? (
+                            <Input
+                                value={activeStep.image}
+                                onChange={(e: any) => updateStep(activeStepIndex, 'image', e.target.value)}
+                                placeholder="Paste image URL here"
+                            />
+                        ) : (
+                            <div className="flex items-center space-x-2">
+                                <label className="flex-1 w-full bg-gray-100 text-gray-700 py-2  rounded-lg border border-dashed border-gray-400 cursor-pointer hover:bg-gray-200 text-sm flex items-center justify-center relative transition-colors">
+                                    <input
+                                        type="file"
+                                        // accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        disabled={isUploadingImage}
+                                    />
+                                    {isUploadingImage ? (
+                                        <span className="flex items-center gap-2 text-blue-600">
+                                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Uploading...
+                                        </span>
+                                    ) : (
+                                        <span className="truncate">
+                                            {activeStep.image ? `File Attached (URL: ${activeStep.image.substring(0, 20)}...)` : "Click to select image file"}
+                                        </span>
+                                    )}
+                                </label>
+                            </div>
+                        )}
+                        <ImagePreview url={activeStep.image} />
+                    </div>
+
+                    <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} placeholder="" />
                     {isPicking ? (
                         <button
                             onClick={handleAbortPicking}
                             className="w-full py-2 bg-red-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5" />
                             Cancel Picking...
                         </button>
                     ) : (
@@ -307,26 +424,27 @@ const SidePanel = () => {
 
 export default SidePanel
 
-
-
-const Input = ({ label, value, onChange, isTextArea }: { label: string, value: string, onChange: (e: any) => void, isTextArea?: boolean }) => {
+const Input = ({ label, value, onChange, isTextArea, placeholder }: { label?: string, value: string, onChange: (e: any) => void, isTextArea?: boolean, placeholder: string }) => {
     return <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-        </label>
+        {
+            label &&
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+            </label>
+        }
         {isTextArea ? <textarea
             id="step-text"
             rows={3}
             value={value}
+            placeholder={placeholder}
             onChange={(e) => onChange(e)}
             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Enter the guiding text for this step..."
         /> : <input
             type="text"
             value={value}
             onChange={(e) => onChange(e)}
             className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="e.g., #prompt-textarea"
+            placeholder={placeholder}
         />}
 
     </div>
