@@ -6,15 +6,10 @@ import './index.css'  // Tailwind import
 import { supabase } from "./config/supabase"
 import { useNavigate } from "react-router-dom"
 import Loading from "./components/Loading"
+import { Course } from "./types"
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]
-}
-
-interface Course {
-    id: number,
-    title: string,
-    description: string
 }
 
 export default function Popup() {

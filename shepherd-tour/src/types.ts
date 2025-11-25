@@ -28,3 +28,10 @@ export interface StepData {
 }
 
 export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type
+export interface InputProps { label?: string, value: string, onChange: (e: any) => void, isTextArea?: boolean, placeholder: string }
+
+export interface Course {
+    id: number,
+    title: string,
+    description: string
+}
