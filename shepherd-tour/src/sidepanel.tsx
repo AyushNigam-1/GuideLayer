@@ -4,8 +4,7 @@ import "./index.css"
 import { Step } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
-import ImagePreview from "./components/InputPreview"
-// import { }
+import FilePreview from "./components/FilePreview"
 
 const SidePanel = () => {
     // --- Application State Management ---
@@ -17,14 +16,14 @@ const SidePanel = () => {
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
-        image: '',
+        file: '',
         element: '',
         on: 'right',  // Set default placement
         order_index: 0
     }]);
     const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-
+    // const [isLoading, setLoading] = useState<boolean>(false)
     const handleCreateCourse = async (steps: Step[]) => {
         setLoading(true)
         try {
@@ -54,7 +53,7 @@ const SidePanel = () => {
         const newStep: Step = {
             _id: newId,
             text: `Step ${steps.length + 1} instructions.`,
-            image: '',
+            file: '',
             element: '',
             on: 'right', // Set default placement
             order_index: steps.length
@@ -154,13 +153,36 @@ const SidePanel = () => {
             )
         })
     };
+    const handleDeleteFile = async (folderPath: string) => {
+        if (!folderPath) return;
+
+        console.log(folderPath)
+        try {
+            const bucket = supabase.storage.from("images");
+            const { data, error } = await bucket.remove([folderPath]);
+            if (error) {
+                console.error('Supabase Deletion Error:', error);
+            } else if (data && data.length > 0) {
+                console.log("wokring delete", data)
+                updateStep(activeStepIndex, 'file', "");
+            } else {
+                console.log(data, error)
+                console.log("lol")
+            }
+        } catch (e) {
+            console.error('Unexpected Deletion Error:', e);
+            // setStatus(`An unexpected error occurred: ${(e as Error).message}`);
+        } finally {
+            // setIsLoading(false);
+        }
+    };
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         setIsUploadingImage(true);
         // Create a unique path for the file in storage
-        const folderPath = `public/steps/${crypto.randomUUID()}-${file.name}`;
+        const folderPath = `${crypto.randomUUID()}-${file.name}`;
 
         try {
             // 1. Upload file to Supabase Storage
@@ -185,7 +207,7 @@ const SidePanel = () => {
 
             // 3. Update the active step's image field with the public URL
             if (activeStepIndex !== null) {
-                updateStep(activeStepIndex, 'image', publicUrl);
+                updateStep(activeStepIndex, 'file', folderPath);
             }
             console.log("Image uploaded and step updated with URL:", publicUrl);
 
@@ -265,58 +287,46 @@ const SidePanel = () => {
                     <Input label="Text" value={activeStep.text}
                         onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)} placeholder="Write Guide text here" isTextArea={true} />
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Step Visual (Optional)</label>
-                        <div className="flex space-x-2">
-                            <button
-                                onClick={() => setImageUploadType('url')}
-                                className={`w-full py-1  rounded-lg font-semibold flex items-center justify-center gap-2  transition-colors ${imageUploadType === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                                disabled={isUploadingImage}
-                            >
-                                <LinkIcon className="w-4" /> File URL
-                            </button>
-                            <button
-                                onClick={() => setImageUploadType('file')}
-                                className={`w-full py-1 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors ${imageUploadType === 'file' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                                disabled={isUploadingImage}
-                            >
-                                <Upload className="w-4" /> Upload File
-                            </button>
-                        </div>
-
-                        {imageUploadType === 'url' ? (
-                            <Input
-                                value={activeStep.image}
-                                onChange={(e: any) => updateStep(activeStepIndex, 'image', e.target.value)}
-                                placeholder="Paste image URL here"
-                            />
-                        ) : (
-                            <div className="flex items-center space-x-2">
-                                <label className="flex-1 w-full bg-gray-100 text-gray-700 py-2  rounded-lg border border-dashed border-gray-400 cursor-pointer hover:bg-gray-200 text-sm flex items-center justify-center relative transition-colors">
-                                    <input
-                                        type="file"
-                                        // accept="image/*"
-                                        onChange={handleFileChange}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                        disabled={isUploadingImage}
-                                    />
-                                    {isUploadingImage ? (
-                                        <span className="flex items-center gap-2 text-blue-600">
-                                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <div >
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Media (Optional)</label>
+                        <div className="flex items-center space-x-2 bg-gray-100 text-gray-700 rounded-lg border border-dashed border-gray-400 cursor-pointer p-2">
+                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors">
+                                <input
+                                    type="file"
+                                    // accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="absolute inset-0 opacity-0 cursor-pointer hover:bg-transparent"
+                                    disabled={isUploadingImage || !!activeStep.file}
+                                />
+                                {isUploadingImage ? (
+                                    <span className="flex items-center gap-2 justify-center text-blue-600 w-full">
+                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Uploading...
+                                    </span>
+                                ) :
+                                    activeStep.file ?
+                                        <>{activeStep.file.slice(0, 25)}...</>
+                                        : <span className="flex items-center justify-center gap-2 w-full" >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                                             </svg>
-                                            Uploading...
-                                        </span>
-                                    ) : (
-                                        <span className="truncate">
-                                            {activeStep.image ? `File Attached (URL: ${activeStep.image.substring(0, 20)}...)` : "Click to select image file"}
-                                        </span>
-                                    )}
-                                </label>
-                            </div>
-                        )}
-                        <ImagePreview url={activeStep.image} />
+                                            Click to select file
+                                        </span>}
+                            </label>
+                            {
+                                activeStep.file && <button
+                                    onClick={() => handleDeleteFile(activeStep.file)}
+                                    className=" text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            }
+                        </div>
+                        {/* // )} */}
+                        <FilePreview urlPath={activeStep.file} />
                     </div>
 
                     <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} placeholder="" />
@@ -325,7 +335,7 @@ const SidePanel = () => {
                             onClick={handleAbortPicking}
                             className="w-full py-2 bg-red-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
                         >
-                            <X className="w-5" />
+                            <X size={15} />
                             Cancel Picking...
                         </button>
                     ) : (
@@ -335,13 +345,13 @@ const SidePanel = () => {
                             disabled={isPicking || activeStepIndex === null}
                         >
                             <Wand2 size={15} />
-                            Pick Element for Step {activeStepIndex + 1}
+                            Pick Element
                         </button>
                     )}
                     <p className="mt-2 text-xs text-gray-500 italic">
                         {isPicking
-                            ? "Hover to highlight, click to select, or press Cancel."
-                            : "Click the button to assign a target element to this step."
+                            ? "Click to select, or press Cancel."
+                            : "Click to assign a target element."
                         }
                     </p>
                     <div>
@@ -386,7 +396,7 @@ const SidePanel = () => {
                 </button>
                 <button
                     onClick={saveSteps}
-                    className="w-full py-2 text-sm bg-purple-600 text-white rounded-lg font-semibold shadow-lg hover:bg-purple-700 transition-colors "
+                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-purple-700 transition-colors "
                     disabled={steps.length === 0}
                 >
                     {
@@ -398,7 +408,7 @@ const SidePanel = () => {
                                 </svg>
                             </div>
                             :
-                            <span className="flex items-center gap-2 justify-center">
+                            <span className="flex items-center gap-2 justify-center ">
                                 <ArrowDownToLine size={15} />  Save
                             </span>
                     }

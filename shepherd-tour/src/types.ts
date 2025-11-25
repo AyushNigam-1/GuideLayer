@@ -5,7 +5,7 @@ export type Placement = 'top' | 'right' | 'bottom' | 'left';
 export interface Step {
     _id: string;
     text: string; // Simplified to string for this UI's input
-    image: string; // Placeholder for image URL
+    file: string; // Placeholder for image URL
     element: string; // The CSS selector
     on: Placement;  // The guide popup alignment
     order_index: number
@@ -15,6 +15,7 @@ export interface Step {
 export interface StepData extends Partial<StepOptions> {
     _id: string
     text: [string] | string
+    file: string
     element?: string | HTMLElement
     on?: Placement
     buttonText?: string
