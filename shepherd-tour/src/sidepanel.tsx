@@ -5,13 +5,13 @@ import { Step } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
 import FilePreview from "./components/FilePreview"
+import Loading from "./components/Loading"
 
 const SidePanel = () => {
     // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
     const [isLoading, setLoading] = useState(false)
-    const [isUploadingImage, setIsUploadingImage] = useState(false); // New state for image upload status
-    const [imageUploadType, setImageUploadType] = useState<'url' | 'file'>('url'); // New state to switch between URL and File upload
+    const [isUploading, setIsUploading] = useState(""); // New state for image upload status
 
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
@@ -19,7 +19,8 @@ const SidePanel = () => {
         file: '',
         element: '',
         on: 'right',  // Set default placement
-        order_index: 0
+        order_index: 0,
+        audio: ""
     }]);
     const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
@@ -56,7 +57,8 @@ const SidePanel = () => {
             file: '',
             element: '',
             on: 'right', // Set default placement
-            order_index: steps.length
+            order_index: steps.length,
+            audio: ""
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
         setActiveStepIndex(steps.length);
@@ -176,11 +178,11 @@ const SidePanel = () => {
             // setIsLoading(false);
         }
     };
-    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, type: string) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        setIsUploadingImage(true);
+        setIsUploading(type);
         // Create a unique path for the file in storage
         const folderPath = `${crypto.randomUUID()}-${file.name}`;
 
@@ -207,7 +209,7 @@ const SidePanel = () => {
 
             // 3. Update the active step's image field with the public URL
             if (activeStepIndex !== null) {
-                updateStep(activeStepIndex, 'file', folderPath);
+                updateStep(activeStepIndex, type, folderPath);
             }
             console.log("Image uploaded and step updated with URL:", publicUrl);
 
@@ -216,7 +218,7 @@ const SidePanel = () => {
             // Using console.error instead of alert as per general instructions
             console.error(`Image upload failed: ${error.message || 'Unknown error'}`);
         } finally {
-            setIsUploadingImage(false);
+            setIsUploading("");
             // Reset the file input value to allow uploading the same file again
             if (event.target) {
                 event.target.value = '';
@@ -252,7 +254,7 @@ const SidePanel = () => {
             <h3 className="text-lg font-bold ">New Guide</h3>
             <hr />
             <Input label="Course Title" value={metadata.title} onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))} placeholder="e.g Chatgpt or Youtube etc" />
-            <Input label="Course Title" placeholder="e.g Course Description here" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
+            <Input label="Course Description" placeholder="e.g Course Description here" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
                 <div className="max-h-32 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white shadow-inner">
@@ -288,17 +290,17 @@ const SidePanel = () => {
                         onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)} placeholder="Write Guide text here" isTextArea={true} />
 
                     <div >
-                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Media (Optional)</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Image/Video (Optional)</label>
                         <div className="flex items-center space-x-2 bg-gray-100 text-gray-700 rounded-lg border border-dashed border-gray-400 cursor-pointer p-2">
                             <label className="flex-1 w-full text-sm flex items-center  relative transition-colors">
                                 <input
                                     type="file"
                                     // accept="image/*"
-                                    onChange={handleFileChange}
+                                    onChange={(e) => handleFileChange(e, "file")}
                                     className="absolute inset-0 opacity-0 cursor-pointer hover:bg-transparent"
-                                    disabled={isUploadingImage || !!activeStep.file}
+                                    disabled={isUploading == "file"}
                                 />
-                                {isUploadingImage ? (
+                                {isUploading == "file" ? (
                                     <span className="flex items-center gap-2 justify-center text-blue-600 w-full">
                                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -326,10 +328,50 @@ const SidePanel = () => {
                             }
                         </div>
                         {/* // )} */}
-                        <FilePreview urlPath={activeStep.file} />
+                        <FilePreview urlPath={activeStep.file} mediaType="file" />
                     </div>
-
-                    <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} placeholder="" />
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Audio (Optional)</label>
+                        <div className="flex items-center space-x-2 bg-gray-100 text-gray-700 rounded-lg border border-dashed border-gray-400 cursor-pointer p-2">
+                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors">
+                                <input
+                                    type="file"
+                                    // accept="image/*"
+                                    onChange={(e) => handleFileChange(e, "audio")}
+                                    className="absolute inset-0 opacity-0 cursor-pointer hover:bg-transparent"
+                                    disabled={isUploading == "audio"}
+                                />
+                                {isUploading == "audio" ? (
+                                    <span className="flex items-center gap-2 justify-center text-blue-600 w-full">
+                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Uploading...
+                                    </span>
+                                ) :
+                                    activeStep.audio ?
+                                        <>{activeStep.audio.slice(0, 25)}...</>
+                                        : <span className="flex items-center justify-center gap-2 w-full" >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                                            </svg>
+                                            Click to select file
+                                        </span>}
+                            </label>
+                            {
+                                activeStep.audio && <button
+                                    onClick={() => handleDeleteFile(activeStep.audio)}
+                                    className=" text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            }
+                        </div>
+                        {/* // )} */}
+                        <FilePreview urlPath={activeStep.audio} mediaType="audio" />
+                    </div>
+                    <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} placeholder="e.g #centeredDiv" disabled={true} />
                     {isPicking ? (
                         <button
                             onClick={handleAbortPicking}
@@ -396,17 +438,12 @@ const SidePanel = () => {
                 </button>
                 <button
                     onClick={saveSteps}
-                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-purple-700 transition-colors "
+                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors "
                     disabled={steps.length === 0}
                 >
                     {
                         isLoading ?
-                            <div className='flex justify-center col-span-4 items-center '>
-                                <svg className="animate-spin  w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
+                            <Loading />
                             :
                             <span className="flex items-center gap-2 justify-center ">
                                 <ArrowDownToLine size={15} />  Save

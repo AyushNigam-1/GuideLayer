@@ -40,7 +40,7 @@ const Course = () => {
             <div className="space-y-2 ">
                 {/* <img src="https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/youtube-app-icon-hd.png" className="size-12" alt="" /> */}
                 <div className="">
-                    <h3 className="text-lg">
+                    <h3 className="text-lg font-bold">
                         {data?.title}
                     </h3>
                     <h4>
@@ -48,18 +48,18 @@ const Course = () => {
                     </h4>
                 </div>
             </div>
-            <h4 className="">
+            <h4 className="text-sm">
                 {data?.description}
             </h4>
-            <button className="w-full py-2 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white " onClick={handleStartTour} >
+            <button className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleStartTour} >
                 {
                     isLoading ?
                         <Loading />
                         :
-                        <>
+                        <span className="flex items-center gap-2 justify-center ">
                             <Play size={16} />
                             Start Guide
-                        </>}
+                        </span>}
             </button>
         </div>
     )

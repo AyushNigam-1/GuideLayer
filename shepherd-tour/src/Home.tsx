@@ -84,15 +84,14 @@ export default function Popup() {
                                 <motion.li
                                     whileHover={{ scale: 1.02 }}
                                     className="cursor-pointer"
-                                    // onClick={() => handleStartTour(course.id)}
                                     onClick={() => navigate("/course", {
                                         state: course
                                     })}
                                 >
                                     <div className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors">
                                         <div>
-                                            <h4 className="font-medium">{course.title}</h4>
-                                            <p className=" text-gray-400">{course.description}</p>
+                                            <h4 className="font-medium text-lg">{course.title}</h4>
+                                            <p className="text-gray-400 line-clamp-2">{course.description}</p>
                                         </div>
                                     </div>
                                 </motion.li>

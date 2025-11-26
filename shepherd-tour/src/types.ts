@@ -9,7 +9,8 @@ export interface Step {
     element: string; // The CSS selector
     on: Placement;  // The guide popup alignment
     order_index: number
-    course_id?: string
+    course_id?: string,
+    audio: string
 }
 
 export interface StepData extends Partial<StepOptions> {
@@ -19,6 +20,7 @@ export interface StepData extends Partial<StepOptions> {
     element?: string | HTMLElement
     on?: Placement
     buttonText?: string
+    audio: string
 }
 
 export interface StepData {
@@ -29,7 +31,7 @@ export interface StepData {
 }
 
 export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type
-export interface InputProps { label?: string, value: string, onChange: (e: any) => void, isTextArea?: boolean, placeholder: string }
+export interface InputProps { label?: string, value: string, onChange: (e: any) => void, isTextArea?: boolean, placeholder: string, disabled?: boolean }
 
 export interface Course {
     id: number,
