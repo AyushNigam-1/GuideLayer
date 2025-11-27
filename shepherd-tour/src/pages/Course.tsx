@@ -3,7 +3,7 @@ import { Play } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
 import { useLocation } from "react-router-dom"
-import Loading from "./components/Loading";
+import Loading from "../components/Loading";
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]

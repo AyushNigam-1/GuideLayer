@@ -2,11 +2,11 @@ import { useEffect, useState } from "react"
 import { Search, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
-import './index.css'  // Tailwind import
-import { supabase } from "./config/supabase"
+import '../index.css'  // Tailwind import
+import { supabase } from "../config/supabase"
 import { useNavigate } from "react-router-dom"
-import Loading from "./components/Loading"
-import { Course } from "./types"
+import Loading from "../components/Loading"
+import { Course } from "../types"
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]

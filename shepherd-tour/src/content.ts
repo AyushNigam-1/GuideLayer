@@ -11,7 +11,44 @@ import { Message, StepData } from "./types"
 let tourSteps: StepData[] = []
 let speechUtterance: SpeechSynthesisUtterance | null = null
 let isSpeaking: boolean = false
+let currentAudio: HTMLAudioElement | null = null
 
+const playStepAudio = (audioUrl: string): void => {
+    // Stop any previous audio
+    if (currentAudio) {
+        currentAudio.pause()
+        currentAudio.currentTime = 0
+        currentAudio = null
+    }
+
+    if (!audioUrl) {
+        console.log("[Tour] No audio URL for this step")
+        return
+    }
+
+    const fullUrl = `https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${audioUrl}`
+    console.log("[Tour] Playing audio:", fullUrl)
+
+    currentAudio = new Audio(fullUrl)
+    currentAudio.volume = 0.9
+
+    currentAudio.play().catch(err => {
+        console.error("[Tour] Audio playback failed:", err)
+    })
+
+    currentAudio.onended = () => {
+        console.log("[Tour] Audio finished")
+        currentAudio = null
+    }
+}
+
+const stopAudio = (): void => {
+    if (currentAudio) {
+        currentAudio.pause()
+        currentAudio.currentTime = 0
+        currentAudio = null
+    }
+}
 const speakText = (text: string): void => {
     if ('speechSynthesis' in window && !isSpeaking) {
         speechUtterance = new SpeechSynthesisUtterance(text)
@@ -210,28 +247,45 @@ const checkPageReady = (): void => {
             throw new Error('No valid steps could be added')
         }
         tour.on('show', (event: { step: Step }) => {  // Fixed: Now uses imported Event type
-            const stepText: string = event.step.options.text as string
-            // speakText(stepData.text) // Narrate on show
-            const closeBtn = document.querySelector('.close-btn')
-            if (closeBtn) {
-                tour.on('show', (event: { step: Step }) => {
-                    // const stepText: string = event.step.options.text as string
-                    // speakText(stepText) // Narrate on show
+            const stepData = event.step.options as any
+            const stepId = stepData.id
 
-                    // CRITICAL: Add click handler to close button
-                    const closeBtn = document.querySelector('.close-btn')
-                    if (closeBtn) {
-                        // Remove old listener to prevent duplicates
-                        closeBtn.replaceWith(closeBtn.cloneNode(true))
-                        const newCloseBtn = document.querySelector('.close-btn')
-                        newCloseBtn?.addEventListener('click', () => {
-                            tour.cancel()
-                            stopSpeech()
-                            console.log("[Tour] User closed the tour")
-                        })
-                    }
-                })
+            // Find the step in tourSteps array
+            const currentStep = tourSteps.find(s => s._id === stepId)
+
+            // Stop any previous audio/voice
+            stopSpeech()
+            stopAudio()
+            console.log(currentStep?.audio, " audio file ")
+            // Play audio file if exists
+            if (currentStep?.audio) {
+
+                playStepAudio(currentStep.audio)
+            } else {
+                // Fallback to voice if no audio
+                const stepText: string = event.step.options.text as string
+                speakText(stepText)
             }
+            const closeBtn = document.querySelector('.close-btn')
+            // if (closeBtn) {
+            //     tour.on('show', (event: { step: Step }) => {
+            //         // const stepText: string = event.step.options.text as string
+            //         // speakText(stepText) // Narrate on show
+
+            //         // CRITICAL: Add click handler to close button
+            //         const closeBtn = document.querySelector('.close-btn')
+            //         if (closeBtn) {
+            //             // Remove old listener to prevent duplicates
+            //             closeBtn.replaceWith(closeBtn.cloneNode(true))
+            //             const newCloseBtn = document.querySelector('.close-btn')
+            //             newCloseBtn?.addEventListener('click', () => {
+            //                 tour.cancel()
+            //                 stopSpeech()
+            //                 console.log("[Tour] User closed the tour")
+            //             })
+            //         }
+            //     })
+            // }
         })
 
         tour.on('hide', () => {
