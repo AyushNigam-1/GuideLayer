@@ -1,34 +1,152 @@
-// src/components/Auth.tsx
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '../config/supabase'
+import type { Provider, User } from "@supabase/supabase-js"
+import { useEffect, useState } from "react"
 
-export default function SupabaseAuth() {
+import { Storage } from "@plasmohq/storage"
+import { useStorage } from "@plasmohq/storage/hook"
+import { supabase } from "../config/supabase"
+
+// import { supabase } from "../core/supabase"
+
+function SupabaseAuth() {
+    const [user, setUser] = useStorage<User>({
+        key: "user",
+        instance: new Storage({
+            area: "local"
+        })
+    })
+
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+
+    useEffect(() => {
+        async function init() {
+            const { data, error } = await supabase.auth.getSession()
+
+            if (error) {
+                console.error(error)
+                return
+            }
+            if (!!data.session) {
+                setUser(data.session.user)
+            }
+        }
+
+        init()
+    }, [])
+
+    const handleEmailLogin = async (
+        type: "LOGIN" | "SIGNUP",
+        username: string,
+        password: string
+    ) => {
+        try {
+            const {
+                error,
+                data: { user }
+            } =
+                type === "LOGIN"
+                    ? await supabase.auth.signInWithPassword({
+                        email: username,
+                        password
+                    })
+                    : await supabase.auth.signUp({ email: username, password })
+
+            if (error) {
+                alert("Error with auth: " + error.message)
+            } else if (!user) {
+                alert("Signup successful, confirmation mail should be sent soon!")
+            } else {
+                setUser(user)
+            }
+        } catch (error) {
+            console.log("error", error)
+            alert(error.error_description || error)
+        }
+    }
+
+    const handleOAuthLogin = async (provider: Provider, scopes = "email") => {
+        await supabase.auth.signInWithOAuth({
+            provider,
+            options: {
+                scopes,
+                redirectTo: location.href
+            }
+        })
+    }
+
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                <h1 className="text-3xl font-bold text-white text-center mb-8">
-                    Welcome to GuideLayer
-                </h1>
-                <Auth
-                    supabaseClient={supabase}
-                    appearance={{
-                        theme: ThemeSupa,
-                        variables: {
-                            default: {
-                                colors: {
-                                    brand: '#10b981',
-                                    brandAccent: '#059669',
-                                },
-                            },
-                        },
-                    }}
-                    providers={['google', 'github', 'apple']}
-                    redirectTo={chrome.runtime.getURL('Home.html')} // or popup.html
-                    onlyThirdPartyProviders={false}
-                    view="magic_link" // or "sign_in", "sign_up"
-                />
+        <main
+            style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                top: 240,
+                position: "relative"
+            }}>
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: 240,
+                    justifyContent: "space-between",
+                    gap: 4.2
+                }}>
+                {user && (
+                    <>
+                        <h3>
+                            {user.email} - {user.id}
+                        </h3>
+                        <button
+                            onClick={() => {
+                                supabase.auth.signOut()
+                                setUser(null)
+                            }}>
+                            Logout
+                        </button>
+                    </>
+                )}
+                {!user && (
+                    <>
+                        <label>Email</label>
+                        <input
+                            type="text"
+                            placeholder="Your Username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                        <label>Password</label>
+                        <input
+                            type="password"
+                            placeholder="Your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+
+                        <button
+                            onClick={(e) => {
+                                handleEmailLogin("SIGNUP", username, password)
+                            }}>
+                            Sign up
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                handleEmailLogin("LOGIN", username, password)
+                            }}>
+                            Login
+                        </button>
+
+                        <button
+                            onClick={(e) => {
+                                handleOAuthLogin("github")
+                            }}>
+                            Sign in with GitHub
+                        </button>
+                    </>
+                )}
             </div>
-        </div>
+        </main>
     )
 }
+
+export default SupabaseAuth
