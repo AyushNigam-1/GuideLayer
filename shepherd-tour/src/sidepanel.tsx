@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
-import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine, LinkIcon, Upload } from "lucide-react"
+import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine } from "lucide-react"
 import "./index.css"
 import { Step } from "./types"
 import { supabase } from "./config/supabase"
@@ -12,7 +12,14 @@ const SidePanel = () => {
     const [isPicking, setIsPicking] = useState(false)
     const [isLoading, setLoading] = useState(false)
     const [isUploading, setIsUploading] = useState(""); // New state for image upload status
-
+    const [userId, setUserId] = useState("")
+    // const []
+    useEffect(() => {
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setUserId(session?.user?.id!)
+        })
+    }, [])
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -31,7 +38,7 @@ const SidePanel = () => {
             const { data } = await supabase
                 .from("courses")
                 .insert({
-                    user_id: crypto.randomUUID(),
+                    user_id: userId,
                     title: metadata.title,
                     description: metadata.description,
                 }).select("id")

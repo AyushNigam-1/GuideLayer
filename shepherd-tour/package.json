@@ -54,6 +54,7 @@
       "<all_urls>"
     ],
     "permissions": [
+      "storage",
       "sidePanel",
       "activePopover",
       "tabs",
