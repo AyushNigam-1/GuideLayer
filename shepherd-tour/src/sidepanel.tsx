@@ -13,13 +13,18 @@ const SidePanel = () => {
     const [isLoading, setLoading] = useState(false)
     const [isUploading, setIsUploading] = useState(""); // New state for image upload status
     const [userId, setUserId] = useState("")
-    // const []
+    const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
+    const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
+
+
     useEffect(() => {
         (async () => {
             const { data: { session } } = await supabase.auth.getSession()
+            console.log("session", session)
             setUserId(session?.user?.id!)
-        })
+        })()
     }, [])
+
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -29,12 +34,12 @@ const SidePanel = () => {
         order_index: 0,
         audio: ""
     }]);
-    const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
-    const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-    // const [isLoading, setLoading] = useState<boolean>(false)
-    const handleCreateCourse = async (steps: Step[]) => {
-        setLoading(true)
-        try {
+
+    const handleCreateCourse = async () => {
+        const cleanSteps = steps.map((step) => {
+            let stepToSave: Step = { ...step };
+            return stepToSave;
+        }).filter(step => step.text.trim() !== '' || step.element); try {
             const { data } = await supabase
                 .from("courses")
                 .insert({
@@ -43,7 +48,7 @@ const SidePanel = () => {
                     description: metadata.description,
                 }).select("id")
                 .single()
-            steps = steps.map((step) => ({ ...step, course_id: data?.id }))
+            let steps = cleanSteps.map((step) => ({ ...step, course_id: data?.id }))
             await supabase.from("steps").insert(
                 steps
             ).select("")
@@ -78,7 +83,6 @@ const SidePanel = () => {
         }
         const newSteps = steps.filter((_, i) => i !== index);
         setSteps(newSteps);
-
         if (activeStepIndex === index) {
             setActiveStepIndex(0); // Default to the first step
         } else if (activeStepIndex > index) {
@@ -162,9 +166,9 @@ const SidePanel = () => {
             )
         })
     };
+
     const handleDeleteFile = async (folderPath: string) => {
         if (!folderPath) return;
-
         console.log(folderPath)
         try {
             const bucket = supabase.storage.from("images");
@@ -185,63 +189,41 @@ const SidePanel = () => {
             // setIsLoading(false);
         }
     };
+
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, type: string) => {
         const file = event.target.files?.[0];
         if (!file) return;
-
         setIsUploading(type);
-        // Create a unique path for the file in storage
         const folderPath = `${crypto.randomUUID()}-${file.name}`;
-
         try {
-            // 1. Upload file to Supabase Storage
-            // Assuming a storage bucket named 'images' is configured
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
                 .from('images') // Use a suitable bucket name, 'images' is a common default
                 .upload(folderPath, file, {
                     cacheControl: '3600',
                     upsert: false
                 });
-
             if (error) {
                 throw error;
             }
-
-            // 2. Get the public URL for the uploaded file
             const { data: publicUrlData } = supabase.storage
                 .from('images')
                 .getPublicUrl(folderPath);
-
             const publicUrl = publicUrlData.publicUrl;
 
-            // 3. Update the active step's image field with the public URL
             if (activeStepIndex !== null) {
                 updateStep(activeStepIndex, type, folderPath);
             }
             console.log("Image uploaded and step updated with URL:", publicUrl);
 
-        } catch (error: any) {
-            console.error('Error uploading file:', error.message || error);
-            // Using console.error instead of alert as per general instructions
+        }
+        catch (error: any) {
             console.error(`Image upload failed: ${error.message || 'Unknown error'}`);
-        } finally {
+        }
+        finally {
             setIsUploading("");
-            // Reset the file input value to allow uploading the same file again
             if (event.target) {
                 event.target.value = '';
             }
-        }
-    };
-    const saveSteps = () => {
-        try {
-            const cleanSteps = steps.map((step) => {
-                let stepToSave: Step = { ...step };
-                return stepToSave;
-            }).filter(step => step.text.trim() !== '' || step.element); // Final filter to remove empty 
-            handleCreateCourse(cleanSteps)
-        } catch (error) {
-            console.error("Error saving steps to Local Storage:", error);
-            alert("Failed to save steps. Check the console for details.");
         }
     };
 
@@ -444,7 +426,7 @@ const SidePanel = () => {
                     New Step
                 </button>
                 <button
-                    onClick={saveSteps}
+                    onClick={handleCreateCourse}
                     className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors "
                     disabled={steps.length === 0}
                 >

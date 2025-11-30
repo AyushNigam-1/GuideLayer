@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Auth } from "@supabase/auth-ui-react"
 import { ThemeSupa } from "@supabase/auth-ui-shared"
 import { supabase, supabaseUrl } from "../config/supabase"
-import { LogOut, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 // import (useNavigation)
 export default function Popup() {

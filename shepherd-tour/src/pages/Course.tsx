@@ -1,8 +1,8 @@
 import "lucide-react"
-import { Play } from "lucide-react";
+import { ChevronLeft, Play } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import Loading from "../components/Loading";
 
 export const config: PlasmoCSConfig = {
@@ -10,6 +10,7 @@ export const config: PlasmoCSConfig = {
 }
 
 const Course = () => {
+    const nav = useNavigate()
     const [isLoading, setLoading] = useState<Boolean>(false)
     const { state } = useLocation()
     const data = state as { id: number; title: string; description: string } | null
@@ -36,7 +37,12 @@ const Course = () => {
     }
     return (
         <div className="space-y-4" >
-            <h3 className="text-lg font-semibold">Course Details</h3>
+            <div className="flex items-center gap-2">
+                <button onClick={() => nav(-1)} className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" >
+                    <ChevronLeft size="16" />
+                </button>
+                <h3 className="text-xl font-semibold">Course Details</h3>
+            </div>
             <div className="space-y-2 ">
                 {/* <img src="https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/youtube-app-icon-hd.png" className="size-12" alt="" /> */}
                 <div className="">

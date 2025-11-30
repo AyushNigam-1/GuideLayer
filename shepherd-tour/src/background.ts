@@ -9,7 +9,7 @@ type StartTourResponse = { success: boolean; error?: string }
 
 const browserAPI = typeof browser !== "undefined" ? browser : chrome
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((_, changeInfo) => {
     const redirectUrl = chrome.identity.getRedirectURL()
 
     if (changeInfo.url && changeInfo.url.startsWith(redirectUrl)) {

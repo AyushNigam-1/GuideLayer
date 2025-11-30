@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Search, Plus } from "lucide-react"
+import { Search, Plus, Settings } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import '../index.css'  // Tailwind import
@@ -23,22 +23,28 @@ export default function Popup() {
     )
 
     useEffect(() => {
-        fetchCourses()
-        console.log("use effect")
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            fetchCourses(session?.user?.id!)
+        })()
     }, [])
 
-    const fetchCourses = async (): Promise<void> => {
+    const fetchCourses = async (userId: string): Promise<void> => {
         setLoading(true)
         try {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from("courses")
-                .select("id, title , description")
-            console.log(data)
-            setCourses(data!)
+                .select("id, title, description")
+                .eq("user_id", userId)
+            if (error) throw error
+            console.log("User's courses:", data)
+            setCourses(data || [])  // data can be null if no courses
         } catch (error) {
             console.error('Error fetching courses:', error)
+            setCourses([]) // clear on error
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const handleCreateNew = async () => {
@@ -58,18 +64,22 @@ export default function Popup() {
         } catch (error: any) {
         }
     }
+
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
                 {/* <BookOpen className="w-6 h-6 text-green-500" /> */}
-                <h3 className="text-lg font-semibold">Guides</h3>
+                <h3 className="text-xl font-semibold">Guides</h3>
+                <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => navigate("/settings")} >
+                    <Settings size="20" />
+                </button>
             </div>
 
             <div className="relative ">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                     type="text"
-                    placeholder="Search courses..."
+                    placeholder="Search Guides..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 text-white rounded-md border border-gray-700 focus:border-green-500 focus:outline-none"
@@ -98,7 +108,9 @@ export default function Popup() {
                             ))
                         ) : (
                             <li className="text-center text-gray-400 py-4">
-                                No courses found. Try searching again.
+                                {
+                                    courses.length == 0 ? "No guides found." : "No guides found. Try searching again"
+                                }
                             </li>
                         )}
             </ul>

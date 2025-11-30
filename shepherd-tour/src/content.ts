@@ -266,7 +266,7 @@ const checkPageReady = (): void => {
                 const stepText: string = event.step.options.text as string
                 speakText(stepText)
             }
-            const closeBtn = document.querySelector('.close-btn')
+            // const closeBtn = document.querySelector('.close-btn')
             // if (closeBtn) {
             //     tour.on('show', (event: { step: Step }) => {
             //         // const stepText: string = event.step.options.text as string
