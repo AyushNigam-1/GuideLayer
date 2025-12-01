@@ -3,6 +3,7 @@ import { StepOptions } from "shepherd.js";
 export type Placement = 'top' | 'right' | 'bottom' | 'left';
 
 export interface Step {
+    id?: number;
     _id: string;
     text: string; // Simplified to string for this UI's input
     file: string; // Placeholder for image URL

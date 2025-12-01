@@ -1,7 +1,8 @@
 // src/components/SettingsPanel.tsx
-import React, { useState, useEffect } from "react"
-import { Moon, Sun, LogOut, User, Palette, Monitor } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon } from "lucide-react"
 import { supabase } from "../config/supabase"
+import { useNavigate } from "react-router-dom"
 
 interface UserProfile {
     name: string
@@ -14,6 +15,7 @@ export default function Settings() {
     const [uiTheme, setUiTheme] = useState<"dark" | "light">("dark")
     const [user, setUser] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
+    const nav = useNavigate()
 
     // Load session + saved themes
     useEffect(() => {
@@ -53,10 +55,16 @@ export default function Settings() {
     }
 
     return (
-        <div className="bg-gray-900 text-white flex flex-col scrollbar-thumb-gray-600 scrollbar-track-gray-200 space-y-4">
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <button onClick={() => nav(-1)} className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" >
+                    <ChevronLeft size="16" />
+                </button>
+                <h3 className="text-xl font-semibold">Profile</h3>
+            </div>
             {/* User Profile */}
             <div className="p-4 border-b border-gray-800 bg-white/5 flex gap-2 rounded-lg">
-                <div className="w-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-3xl font-bold shadow-lg">
+                <div className="w-12 rounded-full  flex items-center justify-center text-3xl font-bold shadow-lg">
                     {user?.avatar ? (
                         <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                     ) : (
@@ -69,94 +77,34 @@ export default function Settings() {
                 </div>
             </div>
             <div className="h-0.5 w-full bg-white/5" />
-            <div className="flex flex-col justify-between p-2 bg-white/5 rounded-xl gap-2">
+            <div className="flex flex-col justify-between rounded-xl gap-2">
                 <div>
                     <p className="font-medium text-lg">Extension UI Theme</p>
                     <p className=" text-gray-400">Changes extension popup background</p>
                 </div>
-                <div className="flex items-center justify-between gap-4">
-                    <button
-                        onClick={() => {
-                            setPopupTheme("light")
-                            saveTheme("popupTheme", "light")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Sun className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setPopupTheme("dark")
-                            saveTheme("popupTheme", "dark")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Monitor className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setPopupTheme("dark")
-                            saveTheme("popupTheme", "dark")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Moon className="w-4 h-4" />
-                    </button>
+                <div className="flex items-center justify-between gap-2">
+                    <Button Icon={Sun
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Monitor
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Moon
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
                 </div>
             </div>
 
             {/* UI Theme (for your tours) */}
-            <div className="flex flex-col justify-between p-2 bg-white/5 rounded-xl gap-2">
+            <div className="flex flex-col justify-between  rounded-xl gap-2">
                 <div>
                     <p className="font-medium text-lg">Guide UI Theme</p>
                     <p className="text-gray-400">Changes tour popup appearance</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => {
-                            setPopupTheme("light")
-                            saveTheme("popupTheme", "light")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Sun className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setPopupTheme("dark")
-                            saveTheme("popupTheme", "dark")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Monitor className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setPopupTheme("dark")
-                            saveTheme("popupTheme", "dark")
-                        }}
-                        className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                            ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                            : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                    >
-                        <Moon className="w-4 h-4" />
-                    </button>
+                <div className="flex items-center gap-2">
+                    <Button Icon={Sun
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Monitor
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Moon
+                    } onClick={() => "lol"} popupTheme={popupTheme} />
                 </div>
             </div>
             <div className="h-0.5 w-full bg-white/5" />
@@ -165,9 +113,9 @@ export default function Settings() {
             <div className="border-t border-gray-800">
                 <button
                     onClick={handleLogout}
-                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl font-medium flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-3 bg-red-400 hover:bg-red-500 rounded-lg font-medium flex items-center justify-center gap-2 transition-all"
                 >
-                    <LogOut className="w-5 h-5" />
+                    <LogOut className="size-4" />
                     Logout
                 </button>
             </div>
@@ -175,7 +123,24 @@ export default function Settings() {
     )
 }
 
+interface ButtonProps {
+    Icon: LucideIcon;           // ← This is the correct type
+    onClick?: () => void;
+    popupTheme?: "light" | "dark";
+    children?: React.ReactNode; // optional text
+}
 
-// const Button = () => {
-
-// }
+const Button: React.FC<ButtonProps> = ({ Icon, onClick, popupTheme }) => {
+    return (
+        <button
+            onClick={onClick}
+            className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
+                ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
+                : "bg-white/5 hover:bg-white/10"
+                }`}
+        >
+            <Icon className="w-5 h-5" />
+            {/* {<icon>} */}
+        </button>
+    )
+}

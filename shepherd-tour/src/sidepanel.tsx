@@ -7,6 +7,8 @@ import Input from "./components/Input"
 import FilePreview from "./components/FilePreview"
 import Loading from "./components/Loading"
 
+// interface Metadata { id: string, title: string, description: string }
+
 const SidePanel = () => {
     // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
@@ -15,16 +17,6 @@ const SidePanel = () => {
     const [userId, setUserId] = useState("")
     const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-
-
-    useEffect(() => {
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            console.log("session", session)
-            setUserId(session?.user?.id!)
-        })()
-    }, [])
-
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -34,6 +26,47 @@ const SidePanel = () => {
         order_index: 0,
         audio: ""
     }]);
+    useEffect(() => {
+        chrome.storage.session.get("sidebarProps", (result) => {
+            if (result.sidebarProps) {
+                setMetadata(result.sidebarProps);
+                chrome.storage.session.remove("sidebarProps");
+                fetchSteps(result.sidebarProps.id)
+            }
+        });
+
+    }, []);
+
+    const fetchSteps = async (id: string) => {
+        try {
+            const { data: steps, error } = await supabase
+                .from("steps")
+                .select("*")
+                .eq("course_id", id)
+                .order("order_index")
+            console.log("steps", steps)
+            setSteps(steps)
+            if (error) {
+                console.error("Supabase error:", error)
+                // sendResponse({ success: false })
+                return
+            }
+            // sendResponse({ success: true })
+        } catch (err) {
+            console.error("[Content Script] Unexpected error:", err)
+            // sendResponse({ success: false })
+        }
+    }
+
+    useEffect(() => {
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            console.log("session", session)
+            setUserId(session?.user?.id!)
+        })()
+    }, [])
+
+
 
     const handleCreateCourse = async () => {
         const cleanSteps = steps.map((step) => {
@@ -239,31 +272,44 @@ const SidePanel = () => {
 
 
     return (
-        <div className="p-4 flex flex-col h-full bg-gray-50 font-mono space-y-4">
-            <h3 className="text-lg font-bold ">New Guide</h3>
-            <hr />
-            <Input label="Course Title" value={metadata.title} onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))} placeholder="e.g Chatgpt or Youtube etc" />
-            <Input label="Course Description" placeholder="e.g Course Description here" value={metadata.description} onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))} isTextArea={true} />
+        <div className="p-4 flex flex-col h-full bg-gray-900 text-white font-mono space-y-4">
+            <h3 className="text-lg font-bold">New Guide</h3>
+            <hr className="border-gray-700" />
+            <Input
+                label="Course Title"
+                value={metadata.title}
+                onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="e.g Chatgpt or Youtube etc"
+            // className="bg-gray-800 text-white border-gray-700 placeholder-gray-500"
+            />
+            <Input
+                label="Course Description"
+                placeholder="e.g Course Description here"
+                value={metadata.description}
+                onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))}
+                isTextArea={true}
+            // className="bg-gray-800 text-white border-gray-700 placeholder-gray-500"
+            />
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
-                <div className="max-h-32 overflow-y-auto space-y-2 p-2 border rounded-lg bg-white shadow-inner">
+                <div className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-700 rounded-lg bg-gray-800 shadow-inner custom-scrollbar">
                     {steps.map((step, index) => (
                         <div
                             key={step._id}
                             className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${index === activeStepIndex
-                                ? 'bg-blue-100 border-blue-500 border-2'
-                                : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'
+                                ? 'bg-blue-900/40 border-blue-500 border'
+                                : 'bg-white/5 hover:bg-gray-600 border border-transparent'
                                 }`}
                             onClick={() => { setActiveStep(index); console.log("index", index) }}
                         >
-                            <span className="truncate text-sm font-medium">
+                            <span className="truncate text-sm font-medium text-gray-200">
                                 {index + 1}. {step.text.substring(0, 30) || "New Step"}
                             </span>
                             <div className="flex items-center space-x-2">
-                                {step.element && <CheckSquare className="w-4 h-4 text-green-600" />}
+                                {step.element && <CheckSquare className="w-4 h-4 text-green-400" />}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); deleteStep(index); }}
-                                    className="p-1 text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                    className="p-1 text-red-400 hover:text-red-300 transition-colors rounded-full hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -272,25 +318,32 @@ const SidePanel = () => {
                     ))}
                 </div>
             </div>
+
             {activeStep && (
-                <div className="flex flex-col space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-md mb-4">
-                    <h3 className="text-md font-bold text-blue-600">Editing Step {activeStepIndex + 1}</h3>
-                    <Input label="Text" value={activeStep.text}
-                        onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)} placeholder="Write Guide text here" isTextArea={true} />
+                <div className="flex flex-col space-y-3 p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-md mb-4">
+                    {/* <h3 className="text-lg font-bold text-blue-400"> Step {activeStepIndex + 1}</h3> */}
+                    <Input
+                        label="Text"
+                        value={activeStep.text}
+                        onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)}
+                        placeholder="Write Guide text here"
+                        isTextArea={true}
+                    // className="bg-white/5 text-white border-gray-600 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                    />
 
                     <div >
-                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Image/Video (Optional)</label>
-                        <div className="flex items-center space-x-2 bg-gray-100 text-gray-700 rounded-lg border border-dashed border-gray-400 cursor-pointer p-2">
-                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors">
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Attach Image/Video (Optional)</label>
+                        <div className="flex items-center space-x-2 bg-white/5 text-gray-300 rounded-lg border border-dashed border-gray-500 cursor-pointer p-2 hover:bg-gray-600 transition-colors">
+                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors cursor-pointer">
                                 <input
                                     type="file"
                                     // accept="image/*"
                                     onChange={(e) => handleFileChange(e, "file")}
-                                    className="absolute inset-0 opacity-0 cursor-pointer hover:bg-transparent"
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
                                     disabled={isUploading == "file"}
                                 />
                                 {isUploading == "file" ? (
-                                    <span className="flex items-center gap-2 justify-center text-blue-600 w-full">
+                                    <span className="flex items-center gap-2 justify-center text-blue-400 w-full">
                                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -300,7 +353,7 @@ const SidePanel = () => {
                                 ) :
                                     activeStep.file ?
                                         <>{activeStep.file.slice(0, 25)}...</>
-                                        : <span className="flex items-center justify-center gap-2 w-full" >
+                                        : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                                             </svg>
@@ -310,7 +363,7 @@ const SidePanel = () => {
                             {
                                 activeStep.file && <button
                                     onClick={() => handleDeleteFile(activeStep.file)}
-                                    className=" text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                    className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -320,18 +373,18 @@ const SidePanel = () => {
                         <FilePreview urlPath={activeStep.file} mediaType="file" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700">Attach Audio (Optional)</label>
-                        <div className="flex items-center space-x-2 bg-gray-100 text-gray-700 rounded-lg border border-dashed border-gray-400 cursor-pointer p-2">
-                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors">
+                        <label className="block text-sm font-medium mb-1 text-gray-300">Attach Audio (Optional)</label>
+                        <div className="flex items-center space-x-2 bg-white/5 text-gray-300 rounded-lg border border-dashed border-gray-500 cursor-pointer p-2 hover:bg-gray-600 transition-colors">
+                            <label className="flex-1 w-full text-sm flex items-center  relative transition-colors cursor-pointer">
                                 <input
                                     type="file"
                                     // accept="image/*"
                                     onChange={(e) => handleFileChange(e, "audio")}
-                                    className="absolute inset-0 opacity-0 cursor-pointer hover:bg-transparent"
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
                                     disabled={isUploading == "audio"}
                                 />
                                 {isUploading == "audio" ? (
-                                    <span className="flex items-center gap-2 justify-center text-blue-600 w-full">
+                                    <span className="flex items-center gap-2 justify-center text-blue-400 w-full">
                                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -341,7 +394,7 @@ const SidePanel = () => {
                                 ) :
                                     activeStep.audio ?
                                         <>{activeStep.audio.slice(0, 25)}...</>
-                                        : <span className="flex items-center justify-center gap-2 w-full" >
+                                        : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                                             </svg>
@@ -351,7 +404,7 @@ const SidePanel = () => {
                             {
                                 activeStep.audio && <button
                                     onClick={() => handleDeleteFile(activeStep.audio)}
-                                    className=" text-red-500 hover:text-red-700 transition-colors rounded-full hover:bg-red-200"
+                                    className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -360,7 +413,14 @@ const SidePanel = () => {
                         {/* // )} */}
                         <FilePreview urlPath={activeStep.audio} mediaType="audio" />
                     </div>
-                    <Input label="Element Selector" value={activeStep.element} onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)} placeholder="e.g #centeredDiv" disabled={true} />
+                    <Input
+                        label="Element Selector"
+                        value={activeStep.element}
+                        onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)}
+                        placeholder="e.g #centeredDiv"
+                        disabled={true}
+                    // className="bg-white/5 text-gray-400 border-gray-600 cursor-not-allowed"
+                    />
                     {isPicking ? (
                         <button
                             onClick={handleAbortPicking}
@@ -379,21 +439,21 @@ const SidePanel = () => {
                             Pick Element
                         </button>
                     )}
-                    <p className="mt-2 text-xs text-gray-500 italic">
+                    <p className="mt-2 text-xs text-gray-400 italic">
                         {isPicking
                             ? "Click to select, or press Cancel."
                             : "Click to assign a target element."
                         }
                     </p>
                     <div>
-                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-300 mb-1">
                             Guide Alignment
                         </label>
                         <select
                             id="step-placement"
                             value={currentPlacement}
                             onChange={(e) => updateStep(activeStepIndex, 'on', e.target.value)}
-                            className="w-full p-2 border rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+                            className="w-full p-2 border border-gray-600 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white/5 text-white"
                         >
                             <option value="right">Right (Default)</option>
                             <option value="left">Left</option>
@@ -417,17 +477,17 @@ const SidePanel = () => {
                 </label>
             </div> */}
             {/* Footer / Save Button */}
-            <div className="mt-auto pt-4 border-t space-y-2">
+            <div className="mt-auto pt-4 border-t border-gray-700 space-y-2">
                 <button
                     onClick={addStep}
-                    className=" w-full text-sm py-2 bg-green-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+                    className=" w-full text-sm py-2 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
                 >
                     <Plus size={15} />
                     New Step
                 </button>
                 <button
                     onClick={handleCreateCourse}
-                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors "
+                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={steps.length === 0}
                 >
                     {

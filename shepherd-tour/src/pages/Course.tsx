@@ -1,5 +1,5 @@
 import "lucide-react"
-import { ChevronLeft, Play } from "lucide-react";
+import { ChevronLeft, Edit, Play } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom"
@@ -35,15 +35,35 @@ const Course = () => {
             setLoading(false)
         }
     }
+    const handleUpdate = async () => {
+        if (!chrome.sidePanel) {
+            return
+        }
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+            if (!tab?.id) {
+                return
+            }
+            await chrome.storage.session.set({
+                sidebarProps: data
+            });
+            await chrome.sidePanel.open({ tabId: tab.id })
+            setTimeout(() => {
+                window.close()
+            }, 500)
+
+        } catch (error: any) {
+        }
+    }
     return (
         <div className="space-y-4" >
             <div className="flex items-center gap-2">
                 <button onClick={() => nav(-1)} className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" >
                     <ChevronLeft size="16" />
                 </button>
-                <h3 className="text-xl font-semibold">Course Details</h3>
+                <h3 className="text-xl font-semibold">Guide Details</h3>
             </div>
-            <div className="space-y-2 ">
+            <div className="flex justify-between items-center">
                 {/* <img src="https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/youtube-app-icon-hd.png" className="size-12" alt="" /> */}
                 <div className="">
                     <h3 className="text-lg font-bold">
@@ -53,6 +73,9 @@ const Course = () => {
                         by Ayush Nigam
                     </h4>
                 </div>
+                <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => handleUpdate()} >
+                    <Edit size="20" />
+                </button>
             </div>
             <h4 className="text-sm">
                 {data?.description}
