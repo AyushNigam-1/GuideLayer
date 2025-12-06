@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
-import { Wand2, X, Plus, Trash2, CheckSquare, ArrowDownToLine } from "lucide-react"
+import { Wand2, X, Plus, Trash2, CheckSquare } from "lucide-react"
 import "./index.css"
 import { Step } from "./types"
 import { supabase } from "./config/supabase"
@@ -15,8 +15,10 @@ const SidePanel = () => {
     const [isLoading, setLoading] = useState(false)
     const [isUploading, setIsUploading] = useState(""); // New state for image upload status
     const [userId, setUserId] = useState("")
-    const [metadata, setMetadata] = useState<{ title: string, description: string }>({ title: "", description: "" })
+    const [metadata, setMetadata] = useState<{ title: string, description: string, baseUrl: string, icon: string }>({ title: "", description: "", baseUrl: "", icon: "" })
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
+    const [courseId, setCourseId] = useState<string>()
+
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
@@ -26,15 +28,16 @@ const SidePanel = () => {
         order_index: 0,
         audio: ""
     }]);
+
     useEffect(() => {
         chrome.storage.session.get("sidebarProps", (result) => {
             if (result.sidebarProps) {
                 setMetadata(result.sidebarProps);
                 chrome.storage.session.remove("sidebarProps");
+                setCourseId(result.sidebarProps.id)
                 fetchSteps(result.sidebarProps.id)
             }
         });
-
     }, []);
 
     const fetchSteps = async (id: string) => {
@@ -45,13 +48,11 @@ const SidePanel = () => {
                 .eq("course_id", id)
                 .order("order_index")
             console.log("steps", steps)
-            setSteps(steps)
+            setSteps(steps as Step[])
             if (error) {
                 console.error("Supabase error:", error)
-                // sendResponse({ success: false })
                 return
             }
-            // sendResponse({ success: true })
         } catch (err) {
             console.error("[Content Script] Unexpected error:", err)
             // sendResponse({ success: false })
@@ -66,33 +67,93 @@ const SidePanel = () => {
         })()
     }, [])
 
-
-
-    const handleCreateCourse = async () => {
-        const cleanSteps = steps.map((step) => {
-            let stepToSave: Step = { ...step };
-            return stepToSave;
-        }).filter(step => step.text.trim() !== '' || step.element); try {
-            const { data } = await supabase
-                .from("courses")
-                .insert({
-                    user_id: userId,
-                    title: metadata.title,
-                    description: metadata.description,
-                }).select("id")
-                .single()
-            let steps = cleanSteps.map((step) => ({ ...step, course_id: data?.id }))
-            await supabase.from("steps").insert(
-                steps
-            ).select("")
-            console.log(data)
-        } catch (error) {
-            console.error('Error adding course:', error)
+    const handleSaveCourse = async () => {
+        if (!userId) {
+            alert("Please login first");
+            return;
         }
-        finally {
-            setLoading(false)
+        setLoading(true);
+        try {
+            const cleanSteps = steps
+                .map((step, index) => ({
+                    _id: step._id,
+                    text: step.text.trim(),
+                    file: step.file || "",
+                    element: step.element || "",
+                    audio: step.audio || "",
+                    on: step.on || "right",
+                    order_index: index,
+                    course_id: courseId || "", // temporary
+                }))
+                .filter(step => step.text !== "");
+            if (courseId) {
+                // UPDATE MODE — course already exists
+                console.log("Updating existing course:", courseId);
+
+                // Update course metadata
+                const { error: courseError } = await supabase
+                    .from("courses")
+                    .update({
+                        title: metadata.title,
+                        description: metadata.description,
+                    })
+                    .eq("id", courseId);
+
+                if (courseError) throw courseError;
+
+                // Delete old steps
+                await supabase.from("steps").delete().eq("course_id", courseId);
+
+                // Insert new steps
+                const stepsToInsert = cleanSteps.map(step => ({
+                    ...step,
+                    course_id: courseId,
+                }));
+
+                const { error } = await supabase
+                    .from("steps")
+                    .insert(stepsToInsert)
+
+                if (error) throw error;
+
+                alert("Course updated successfully!");
+            } else {
+                // CREATE MODE — same as your old function
+                console.log("Creating new course");
+
+                const { data: courseData, error: courseError } = await supabase
+                    .from("courses")
+                    .insert({
+                        user_id: userId,
+                        title: metadata.title,
+                        description: metadata.description,
+                    })
+                    .select("id")
+                    .single();
+
+                if (courseError) throw courseError;
+
+                const stepsToInsert = cleanSteps.map(step => ({
+                    ...step,
+                    course_id: courseData.id,
+                }));
+
+                const { error: stepsError } = await supabase
+                    .from("steps")
+                    .insert(stepsToInsert);
+
+                if (stepsError) throw stepsError;
+
+                setCourseId(courseData.id);
+                alert("Course created successfully!");
+            }
+        } catch (error: any) {
+            console.error("Save failed:", error);
+            alert("Failed to save: " + error.message);
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
     const addStep = () => {
         const newId = `step-${Date.now()}`;
@@ -242,7 +303,9 @@ const SidePanel = () => {
                 .from('images')
                 .getPublicUrl(folderPath);
             const publicUrl = publicUrlData.publicUrl;
-
+            if (type == "icon") {
+                setMetadata((prev) => ({ ...prev, icon: publicUrl }))
+            }
             if (activeStepIndex !== null) {
                 updateStep(activeStepIndex, type, folderPath);
             }
@@ -276,20 +339,68 @@ const SidePanel = () => {
             <h3 className="text-lg font-bold">New Guide</h3>
             <hr className="border-gray-700" />
             <Input
-                label="Course Title"
+                label="Title"
                 value={metadata.title}
                 onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g Chatgpt or Youtube etc"
             // className="bg-gray-800 text-white border-gray-700 placeholder-gray-500"
             />
             <Input
-                label="Course Description"
+                label="Site Base Url"
+                value={metadata.baseUrl}
+                onChange={(e) => setMetadata((prev) => ({ ...prev, baseUrl: e.target.value }))}
+                placeholder="e.g chatgpt.com"
+            // className="bg-gray-800 text-white border-gray-700 placeholder-gray-500"
+            />
+            <Input
+                label="Description"
                 placeholder="e.g Course Description here"
                 value={metadata.description}
                 onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))}
                 isTextArea={true}
             // className="bg-gray-800 text-white border-gray-700 placeholder-gray-500"
             />
+            <div >
+                <label className="block text-sm font-medium mb-1 text-gray-300">Icon</label>
+                <div className="flex items-center space-x-2 bg-white/5 text-gray-300 rounded-lg border border-dashed border-gray-500 cursor-pointer p-2 hover:bg-gray-600 transition-colors">
+                    <label className="flex-1 w-full text-sm flex items-center  relative transition-colors cursor-pointer">
+                        <input
+                            type="file"
+                            // accept="image/*"
+                            onChange={(e) => handleFileChange(e, "icon")}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            disabled={isUploading == "icon"}
+                        />
+                        {isUploading == "icon" ? (
+                            <span className="flex items-center gap-2 justify-center text-blue-400 w-full">
+                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Uploading...
+                            </span>
+                        ) :
+                            activeStep.file ?
+                                <>{activeStep.file.slice(0, 25)}...</>
+                                : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                    Click to select file
+                                </span>}
+                    </label>
+                    {
+                        activeStep.file && <button
+                            onClick={() => handleDeleteFile(activeStep.file)}
+                            className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    }
+                </div>
+                {/* // )} */}
+                <FilePreview urlPath={metadata.icon} mediaType="file" />
+            </div>
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
                 <div className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-700 rounded-lg bg-gray-800 shadow-inner custom-scrollbar">
@@ -486,7 +597,7 @@ const SidePanel = () => {
                     New Step
                 </button>
                 <button
-                    onClick={handleCreateCourse}
+                    onClick={handleSaveCourse}
                     className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={steps.length === 0}
                 >
@@ -495,7 +606,7 @@ const SidePanel = () => {
                             <Loading />
                             :
                             <span className="flex items-center gap-2 justify-center ">
-                                <ArrowDownToLine size={15} />  Save
+                                {courseId ? "Update Course" : "Save Course"}
                             </span>
                     }
                 </button>
