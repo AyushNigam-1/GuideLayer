@@ -96,6 +96,8 @@ const SidePanel = () => {
                     .update({
                         title: metadata.title,
                         description: metadata.description,
+                        icon: metadata.icon,
+                        baseUrl: metadata.baseUrl
                     })
                     .eq("id", courseId);
 
@@ -127,6 +129,8 @@ const SidePanel = () => {
                         user_id: userId,
                         title: metadata.title,
                         description: metadata.description,
+                        icon: metadata.icon,
+                        baseUrl: metadata.baseUrl
                     })
                     .select("id")
                     .single();
@@ -261,7 +265,7 @@ const SidePanel = () => {
         })
     };
 
-    const handleDeleteFile = async (folderPath: string) => {
+    const handleDeleteFile = async (folderPath: string, type: string) => {
         if (!folderPath) return;
         console.log(folderPath)
         try {
@@ -270,8 +274,14 @@ const SidePanel = () => {
             if (error) {
                 console.error('Supabase Deletion Error:', error);
             } else if (data && data.length > 0) {
+                if (type == "icon") {
+                    console.log("removed Icon")
+                    setMetadata((prev) => ({ ...prev, icon: "" }))
+                }
+                else {
+                    updateStep(activeStepIndex, type, "");
+                }
                 console.log("wokring delete", data)
-                updateStep(activeStepIndex, 'file', "");
             } else {
                 console.log(data, error)
                 console.log("lol")
@@ -299,17 +309,12 @@ const SidePanel = () => {
             if (error) {
                 throw error;
             }
-            const { data: publicUrlData } = supabase.storage
-                .from('images')
-                .getPublicUrl(folderPath);
-            const publicUrl = publicUrlData.publicUrl;
             if (type == "icon") {
-                setMetadata((prev) => ({ ...prev, icon: publicUrl }))
+                setMetadata((prev) => ({ ...prev, icon: folderPath }))
             }
             if (activeStepIndex !== null) {
                 updateStep(activeStepIndex, type, folderPath);
             }
-            console.log("Image uploaded and step updated with URL:", publicUrl);
 
         }
         catch (error: any) {
@@ -380,8 +385,8 @@ const SidePanel = () => {
                                 Uploading...
                             </span>
                         ) :
-                            activeStep.file ?
-                                <>{activeStep.file.slice(0, 25)}...</>
+                            metadata.icon ?
+                                <>{metadata.icon.slice(0, 25)}...</>
                                 : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -390,8 +395,8 @@ const SidePanel = () => {
                                 </span>}
                     </label>
                     {
-                        activeStep.file && <button
-                            onClick={() => handleDeleteFile(activeStep.file)}
+                        metadata.icon && <button
+                            onClick={() => handleDeleteFile(metadata.icon, "icon")}
                             className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -463,7 +468,7 @@ const SidePanel = () => {
                                     </span>
                                 ) :
                                     activeStep.file ?
-                                        <>{activeStep.file.slice(0, 25)}...</>
+                                        <>{activeStep.file.slice(0, 22)}...</>
                                         : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -473,7 +478,7 @@ const SidePanel = () => {
                             </label>
                             {
                                 activeStep.file && <button
-                                    onClick={() => handleDeleteFile(activeStep.file)}
+                                    onClick={() => handleDeleteFile(activeStep.file, "file")}
                                     className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -504,7 +509,7 @@ const SidePanel = () => {
                                     </span>
                                 ) :
                                     activeStep.audio ?
-                                        <>{activeStep.audio.slice(0, 25)}...</>
+                                        <>{activeStep.audio.slice(0, 22)}...</>
                                         : <span className="flex items-center justify-center gap-2 w-full text-gray-400" >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -514,7 +519,7 @@ const SidePanel = () => {
                             </label>
                             {
                                 activeStep.audio && <button
-                                    onClick={() => handleDeleteFile(activeStep.audio)}
+                                    onClick={() => handleDeleteFile(activeStep.audio, "audio")}
                                     className=" text-red-400 hover:text-red-300 transition-colors rounded-full p-1 hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />

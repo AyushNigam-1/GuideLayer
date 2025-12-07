@@ -13,7 +13,7 @@ const Course = () => {
     const nav = useNavigate()
     const [isLoading, setLoading] = useState<Boolean>(false)
     const { state } = useLocation()
-    const data = state as { id: number; title: string; description: string } | null
+    const data = state as { id: number; title: string; description: string; icon: string, baseUrl: string } | null
 
     const handleStartTour = async () => {
         // console.log(data?.id)
@@ -64,14 +64,16 @@ const Course = () => {
                 <h3 className="text-xl font-semibold">Guide Details</h3>
             </div>
             <div className="flex justify-between items-center">
-                {/* <img src="https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/youtube-app-icon-hd.png" className="size-12" alt="" /> */}
-                <div className="">
-                    <h3 className="text-lg font-bold">
-                        {data?.title}
-                    </h3>
-                    <h4>
-                        by Ayush Nigam
-                    </h4>
+                <div className="flex items-center gap-2">
+                    <img src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${data?.icon}`} alt="" className="w-10 rounded-md" />
+                    <div>
+                        <h3 className="text-lg font-bold">
+                            {data?.title}
+                        </h3>
+                        <h4>
+                            by Ayush Nigam
+                        </h4>
+                    </div>
                 </div>
                 <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => handleUpdate()} >
                     <Edit size="20" />

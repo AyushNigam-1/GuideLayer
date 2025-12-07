@@ -37,5 +37,7 @@ export interface InputProps { label?: string, value: string, onChange: (e: any) 
 export interface Course {
     id: number,
     title: string,
-    description: string
+    description: string,
+    icon: string,
+    baseUrl: string
 }

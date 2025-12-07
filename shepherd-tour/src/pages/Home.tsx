@@ -34,7 +34,7 @@ export default function Popup() {
         try {
             const { data, error } = await supabase
                 .from("courses")
-                .select("id, title, description")
+                .select("id, title, description , icon, baseUrl")
                 .eq("user_id", userId)
             if (error) throw error
             console.log("User's courses:", data)
@@ -99,6 +99,8 @@ export default function Popup() {
                                     })}
                                 >
                                     <div className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors">
+                                        <img src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${course.icon}`} alt="" className="w-16 rounded-md" />
+
                                         <div>
                                             <h4 className="font-medium text-lg">{course.title}</h4>
                                             <p className="text-gray-400 line-clamp-2">{course.description}</p>
