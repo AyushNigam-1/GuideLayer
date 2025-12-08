@@ -18,7 +18,7 @@ const FilePreview = ({ urlPath, mediaType }: { urlPath: string, mediaType: strin
     if (isAudio && mediaType == "audio") {
         return (
             <div className="mt-3 relative">
-                <p className="text-xs font-medium text-gray-700 mb-1">Audio Preview</p>
+                <p className="text-xs font-medium text-gray-300 mb-1">Audio Preview</p>
                 <audio
                     controls
                     src={fullPath}
@@ -39,7 +39,7 @@ const FilePreview = ({ urlPath, mediaType }: { urlPath: string, mediaType: strin
         // Render a video element with controls
         return (
             <div className="mt-3 relative">
-                <p className="text-xs font-medium text-gray-700 mb-1">Video Preview</p>
+                <p className="text-xs font-medium text-gray-300 mb-1">Video Preview</p>
                 <video
                     src={fullPath}
                     controls
@@ -55,7 +55,7 @@ const FilePreview = ({ urlPath, mediaType }: { urlPath: string, mediaType: strin
     if ((isImage || !isVideo || !isAudio)) {
         return (
             <div className="mt-3 relative">
-                <p className="text-xs font-medium text-gray-700 mb-1">Image Preview</p>
+                <p className="text-xs font-medium text-gray-300 mb-1">Image Preview</p>
                 <img
                     src={fullPath}
                     alt="Step Visual Guide"

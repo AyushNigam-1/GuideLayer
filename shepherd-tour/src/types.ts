@@ -41,3 +41,4 @@ export interface Course {
     icon: string,
     baseUrl: string
 }
+export type MediaType = 'file' | 'icon' | 'audio'  // adjust as needed

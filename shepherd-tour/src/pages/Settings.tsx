@@ -20,6 +20,7 @@ export default function Settings() {
     // Load session + saved themes
     useEffect(() => {
         const loadUser = async () => {
+            console.log(uiTheme)
             const { data: { session } } = await supabase.auth.getSession()
             if (session?.user) {
                 setUser({
@@ -41,9 +42,9 @@ export default function Settings() {
     }, [])
 
     // Save theme changes
-    const saveTheme = (key: string, value: "dark" | "light") => {
-        chrome.storage.sync.set({ [key]: value })
-    }
+    // const saveTheme = (key: string, value: "dark" | "light") => {
+    //     chrome.storage.sync.set({ [key]: value })
+    // }
 
     const handleLogout = async () => {
         await supabase.auth.signOut()

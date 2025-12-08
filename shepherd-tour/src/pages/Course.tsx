@@ -1,5 +1,5 @@
 import "lucide-react"
-import { ChevronLeft, Edit, Play } from "lucide-react";
+import { ChevronLeft, Pencil, Play } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom"
@@ -75,19 +75,25 @@ const Course = () => {
                         </h4>
                     </div>
                 </div>
-                <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => handleUpdate()} >
+                {/* <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => handleUpdate()} >
                     <Edit size="20" />
-                </button>
+                </button> */}
             </div>
             <h4 className="text-sm">
                 {data?.description}
             </h4>
-            <button className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleStartTour} >
+            <button className="w-full py-2 flex items-center gap-2 justify-center   bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleUpdate} >
+                <span className="flex items-center gap-2 justify-center">
+                    <Pencil size={16} />
+                    Edit Guide
+                </span>
+            </button>
+            <button className="w-full py-2  bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleStartTour} >
                 {
                     isLoading ?
                         <Loading />
                         :
-                        <span className="flex items-center gap-2 justify-center ">
+                        <span className="flex items-center gap-2 justify-center">
                             <Play size={16} />
                             Start Guide
                         </span>}
