@@ -143,11 +143,125 @@ type SendResponse = (response?: { success: boolean; error?: string, data?: any }
 chrome.runtime.onMessage.addListener((message: Message, _: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
     if (message.action === "startTour") {
         console.log("working lol")
+        // Extract baseUrl from message (e.g. "https://chat.openai.com")
+        const expectedBaseUrl = message.baseUrl
+        console.log(message)
+        const currentUrl = window.location.href
+        const currentBase = new URL(currentUrl).origin
+        console.log(currentBase !== expectedBaseUrl, currentBase, expectedBaseUrl)
+        // Check if current site matches expected base URL
+        if (currentBase !== expectedBaseUrl) {
+            console.log("wrong url")
+            showWrongSiteWarning(expectedBaseUrl)
+            sendResponse({ success: false, error: "Wrong website" })
+            return true
+        }
+
+        // If correct site → start tour
         handleStartTour(message.courseId!, sendResponse)
         return true
+        // handleStartTour(message.courseId!, sendResponse)
+        // return true
     }
-
 })
+
+function showWrongSiteWarning(correctUrl: string) {
+    // Remove any existing warning
+    document.querySelector("#guide-layer-wrong-site")?.remove()
+
+    const warning = document.createElement("div")
+    warning.id = "guide-layer-wrong-site"
+    warning.innerHTML = `
+   <div class="custom-popup" style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%); /* Perfect Center */
+      z-index: 999999;
+      background: rgb(17 24 39); /* Reverted to Dark Background */
+      color: white; /* Reverted to White Text */
+      padding: 30px 24px 24px 24px;
+      border-radius: 16px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5); /* Darker shadow for dark mode */
+      font-family: 'Inter', system-ui, sans-serif;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 0.3s ease-out;
+    ">
+      <div style="
+        color: #ef4444; /* Tailwind red-500 */
+        font-size: 40px;
+        line-height: 1;
+        margin-bottom: 10px;
+      ">
+        &#9888; </div>
+      
+      <div style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: white;">
+        Wrong Website Detected!
+      </div>
+      
+      <p style="margin: 12px 0 20px 0; font-size: 15px; line-height: 1.5; color: #d1d5db;">
+        This guide is intended for:
+        <strong style="color: white; font-weight: 600;">${correctUrl}</strong><br>
+        You're currently on: 
+        <strong style="color: #ef4444; font-weight: 600;">${window.location.hostname}</strong>
+      </p>
+      
+      <button id="guide-layer-redirect-btn" style="
+        width: 100%;
+        background: rgb(37 99 235); /* High-contrast red for the primary action */
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+      " onmouseover="this.style.background='#b91c1c'; this.style.boxShadow='0 6px 8px rgba(185, 28, 28, 0.3)';"
+         onmouseout="this.style.background='#ef4444'; this.style.boxShadow='0 4px 6px rgba(239, 68, 68, 0.2)';">
+        Go to Correct Site
+      </button>
+      
+      <button onclick="/* Add your dismiss function here */" style="
+        background: transparent;
+        border: none;
+        color: #9ca3af; /* Soft gray for secondary action */
+        margin-top: 10px;
+        padding: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: color 0.2s;
+      " onmouseover="this.style.color='white'" onmouseout="this.style.color='#9ca3af'">
+        Continue Anyway (Not Recommended)
+      </button>
+
+    </div>
+
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translate(-50%, -60%); }
+        to { opacity: 1; transform: translate(-50%, -50%); }
+      }
+    </style>
+  `
+
+    document.body.appendChild(warning)
+
+    // Redirect button
+    document.getElementById("guide-layer-redirect-btn")?.addEventListener("click", () => {
+        window.location.replace(correctUrl); // Use replace() instead of setting href directly 
+    })
+
+    // Auto-remove after 10 seconds (optional)
+    setTimeout(() => {
+        warning.style.transition = "all 0.5s"
+        warning.style.transform = "translateX(-50%) translateY(-20px)"
+        warning.style.opacity = "0"
+        setTimeout(() => warning.remove(), 500)
+    }, 10000)
+}
 
 const checkPageReady = (): void => {
     if (!document.body) {

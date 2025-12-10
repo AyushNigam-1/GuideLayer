@@ -31,7 +31,7 @@ export interface StepData {
     // buttonText and complex text array handling omitted for UI simplicity
 }
 
-export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string } // 🛑 Update Message type
+export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string, baseUrl: string } // 🛑 Update Message type
 export interface InputProps { label?: string, value: string, onChange: (e: any) => void, isTextArea?: boolean, placeholder: string, disabled?: boolean }
 
 export interface Course {

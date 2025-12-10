@@ -16,7 +16,7 @@ const Course = () => {
     const data = state as { id: number; title: string; description: string; icon: string, baseUrl: string } | null
 
     const handleStartTour = async () => {
-        // console.log(data?.id)
+        console.log(data?.baseUrl)
         setLoading(true)
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
@@ -26,6 +26,7 @@ const Course = () => {
             await chrome.tabs.sendMessage(tab.id, {
                 action: "startTour",
                 courseId: data!.id,
+                baseUrl: data!.baseUrl
             })
             // console.log("working")
         } catch (err) {

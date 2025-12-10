@@ -5,7 +5,6 @@ import { MediaType } from '../types'
 
 
 interface FileUploadProps {
-    /** Which file type this uploader handles (used for loading/deleting state) */
     type: MediaType
     file: string | null
     isUploading: MediaType | null
