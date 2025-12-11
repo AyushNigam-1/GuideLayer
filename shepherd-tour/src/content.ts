@@ -198,7 +198,7 @@ function showWrongSiteWarning(correctUrl: string) {
         &#9888; </div>
       
       <div style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: white;">
-        Wrong Website Detected!
+        Wrong Website!
       </div>
       
       <p style="margin: 12px 0 20px 0; font-size: 15px; line-height: 1.5; color: #d1d5db;">
@@ -218,13 +218,18 @@ function showWrongSiteWarning(correctUrl: string) {
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.2s, box-shadow 0.2s;
-      " onmouseover="this.style.background='#b91c1c'; this.style.boxShadow='0 6px 8px rgba(185, 28, 28, 0.3)';"
-         onmouseout="this.style.background='#ef4444'; this.style.boxShadow='0 4px 6px rgba(239, 68, 68, 0.2)';">
+        display:flex;
+        justify-content:center;
+        gap:6px;
+        transition: background 0.2s, box-shadow 0.2s;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={1.5} stroke="currentColor" style="width:20px">
+  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+</svg>
+
         Go to Correct Site
       </button>
       
-      <button onclick="/* Add your dismiss function here */" style="
+      <button id="guide-layer-continue-anyway" style="
         background: transparent;
         border: none;
         color: #9ca3af; /* Soft gray for secondary action */
@@ -232,13 +237,10 @@ function showWrongSiteWarning(correctUrl: string) {
         padding: 5px;
         cursor: pointer;
         font-size: 14px;
-        transition: color 0.2s;
-      " onmouseover="this.style.color='white'" onmouseout="this.style.color='#9ca3af'">
-        Continue Anyway (Not Recommended)
+        transition: color 0.2s;">
+        Continue Anyway 
       </button>
-
     </div>
-
     <style>
       @keyframes fadeIn {
         from { opacity: 0; transform: translate(-50%, -60%); }
@@ -249,9 +251,11 @@ function showWrongSiteWarning(correctUrl: string) {
 
     document.body.appendChild(warning)
 
-    // Redirect button
     document.getElementById("guide-layer-redirect-btn")?.addEventListener("click", () => {
-        window.location.replace(correctUrl); // Use replace() instead of setting href directly 
+        window.location.replace(correctUrl);
+    })
+    document.getElementById("guide-layer-continue-anyway")?.addEventListener("click", () => {
+        warning.remove()
     })
 
     // Auto-remove after 10 seconds (optional)

@@ -83,13 +83,13 @@ const Course = () => {
             <h4 className="text-sm">
                 {data?.description}
             </h4>
-            <button className="w-full py-2 flex items-center gap-2 justify-center   bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleUpdate} >
+            <button className="w-full py-2 flex items-center gap-2 justify-center   bg-indigo-400 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleUpdate} >
                 <span className="flex items-center gap-2 justify-center">
                     <Pencil size={16} />
                     Edit Guide
                 </span>
             </button>
-            <button className="w-full py-2  bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleStartTour} >
+            <button className="w-full py-2  bg-indigo-400 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-500 transition-colors " onClick={handleStartTour} >
                 {
                     isLoading ?
                         <Loading />

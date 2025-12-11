@@ -1,5 +1,5 @@
 // src/components/SettingsPanel.tsx
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon } from "lucide-react"
 import { supabase } from "../config/supabase"
 import { useNavigate } from "react-router-dom"
@@ -10,138 +10,209 @@ interface UserProfile {
     avatar?: string
 }
 
+type ThemeValue = "light" | "dark" | "system"
+
+// ---------- THEME STORAGE ----------
+const saveTheme = (key: string, value: ThemeValue) => {
+    if (typeof chrome !== "undefined" && chrome.storage?.sync) {
+        chrome.storage.sync.set({ [key]: value }, () =>
+            console.log(`Saved ${key}:`, value)
+        )
+    } else {
+        console.warn("chrome.storage unavailable; state only")
+    }
+}
+
+// ---------- APPLY TAILWIND THEME ----------
+const applyTheme = (theme: ThemeValue) => {
+    const root = document.documentElement
+
+    if (theme === "light") {
+        root.classList.remove("dark")
+        return
+    }
+
+    if (theme === "dark") {
+        root.classList.add("dark")
+        return
+    }
+
+    // system mode
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+    root.classList.toggle("dark", prefersDark)
+}
+
+// ---------- BUTTON ----------
+interface ButtonProps {
+    Icon: LucideIcon
+    label: ThemeValue
+    active: ThemeValue
+    onClick: (theme: ThemeValue) => void
+}
+
+const Button: React.FC<ButtonProps> = ({ Icon, label, active, onClick }) => {
+    const isActive = label === active
+
+    return (
+        <button
+            onClick={() => onClick(label)}
+            className={`p-3 w-full rounded-lg transition-all flex items-center justify-center border-2 
+                ${isActive
+                    ? "bg-indigo-500 text-white border-indigo-500 shadow-md"
+                    : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                }`}
+        >
+            <Icon className="w-5 h-5" />
+        </button>
+    )
+}
+
+// ---------- MAIN COMPONENT ----------
 export default function Settings() {
-    const [popupTheme, setPopupTheme] = useState<"dark" | "light">("dark")
-    const [uiTheme, setUiTheme] = useState<"dark" | "light">("dark")
+    const [popupTheme, setPopupTheme] = useState<ThemeValue>("dark")
+    const [uiTheme, setUiTheme] = useState<ThemeValue>("dark")
     const [user, setUser] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const nav = useNavigate()
 
-    // Load session + saved themes
+    const handleSetPopupTheme = (theme: ThemeValue) => {
+        setPopupTheme(theme)
+        saveTheme("popupTheme", theme)
+        applyTheme(theme)
+    }
+
+    const handleSetUiTheme = (theme: ThemeValue) => {
+        setUiTheme(theme)
+        saveTheme("uiTheme", theme)
+    }
+
+    const handleLogout = async () => {
+        try {
+            await supabase.auth.signOut()
+            window.close()
+        } catch (e) {
+            console.error("Logout failed:", e)
+        }
+    }
+
+    // Load saved themes + user
     useEffect(() => {
         const loadUser = async () => {
-            console.log(uiTheme)
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.user) {
-                setUser({
-                    name: session.user.user_metadata.full_name || session.user.email?.split("@")[0] || "User",
-                    email: session.user.email || "",
-                    avatar: session.user.user_metadata.avatar_url
-                })
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (session?.user) {
+                    setUser({
+                        name: session.user.user_metadata.full_name ||
+                            session.user.email?.split("@")[0] ||
+                            "User",
+                        email: session.user.email || "",
+                        avatar: session.user.user_metadata.avatar_url
+                    })
+                }
+            } catch (e) {
+                console.error("Failed to load session:", e)
             }
             setLoading(false)
         }
 
-        // Load saved themes from chrome.storage
-        chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => {
-            if (result.popupTheme) setPopupTheme(result.popupTheme)
-            if (result.uiTheme) setUiTheme(result.uiTheme)
-        })
+        if (chrome?.storage?.sync) {
+            chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => {
+                if (result.popupTheme) setPopupTheme(result.popupTheme)
+                if (result.uiTheme) setUiTheme(result.uiTheme)
+
+                // Apply stored theme on load
+                if (result.popupTheme) applyTheme(result.popupTheme)
+            })
+        } else {
+            applyTheme(popupTheme)
+        }
 
         loadUser()
     }, [])
 
-    // Save theme changes
-    // const saveTheme = (key: string, value: "dark" | "light") => {
-    //     chrome.storage.sync.set({ [key]: value })
-    // }
+    // Live system-theme reactivity
+    useEffect(() => {
+        if (popupTheme !== "system") return
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut()
-        window.close() // Close popup after logout
-    }
+        const mq = window.matchMedia("(prefers-color-scheme: dark)")
+        const listener = () => applyTheme("system")
+
+        mq.addEventListener("change", listener)
+        return () => mq.removeEventListener("change", listener)
+    }, [popupTheme])
 
     if (loading) {
-        return <div className="p-8 text-center">Loading...</div>
+        return <div className="p-8 text-center bg-gray-900 text-white">Loading...</div>
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 bg-gray-900 text-white min-w-[300px]">
             <div className="flex items-center gap-2">
-                <button onClick={() => nav(-1)} className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" >
+                <button
+                    onClick={() => nav(-1)}
+                    className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors"
+                >
                     <ChevronLeft size="16" />
                 </button>
-                <h3 className="text-xl font-semibold">Profile</h3>
+                <h3 className="text-xl font-semibold">Profile & Settings</h3>
             </div>
-            {/* User Profile */}
-            <div className="p-4 border-b border-gray-800 bg-white/5 flex gap-2 rounded-lg">
-                <div className="w-12 rounded-full  flex items-center justify-center text-3xl font-bold shadow-lg">
+
+            {/* User */}
+
+            <div className="p-4 bg-gray-800 flex gap-4 rounded-lg shadow-xl">
+                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold">
                     {user?.avatar ? (
-                        <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                        <User className="w-12 " />
+                        <User className="w-8 h-8 text-indigo-400" />
                     )}
                 </div>
-                <div className="space-y-1">
-                    <h2 className="text-xl font-bold">{user?.name || "Guest"}</h2>
-                    <p className="text-sm text-gray-400">{user?.email || "Not logged in"}</p>
+                <div className="space-y-1 text-left">
+                    <h2 className="text-xl font-bold">{user?.name || "Guest User"}</h2>
+                    <p className="text-sm text-gray-400 truncate">{user?.email || "Not logged in"}</p>
                 </div>
             </div>
+
             <div className="h-0.5 w-full bg-white/5" />
-            <div className="flex flex-col justify-between rounded-xl gap-2">
-                <div>
+
+            {/* Popup Theme */}
+            <div className="flex flex-col rounded-xl gap-2 p-3 bg-gray-800/50">
+                <div className="mb-2">
                     <p className="font-medium text-lg">Extension UI Theme</p>
-                    <p className=" text-gray-400">Changes extension popup background</p>
+                    <p className="text-gray-400 text-sm">Changes extension popup appearance</p>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                    <Button Icon={Sun
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
-                    <Button Icon={Monitor
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
-                    <Button Icon={Moon
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Sun} label="light" active={popupTheme} onClick={handleSetPopupTheme} />
+                    <Button Icon={Monitor} label="system" active={popupTheme} onClick={handleSetPopupTheme} />
+                    <Button Icon={Moon} label="dark" active={popupTheme} onClick={handleSetPopupTheme} />
                 </div>
             </div>
 
-            {/* UI Theme (for your tours) */}
-            <div className="flex flex-col justify-between  rounded-xl gap-2">
-                <div>
+            {/* UI Theme */}
+            <div className="flex flex-col rounded-xl gap-2 p-3 bg-gray-800/50">
+                <div className="mb-2">
                     <p className="font-medium text-lg">Guide UI Theme</p>
-                    <p className="text-gray-400">Changes tour popup appearance</p>
+                    <p className="text-gray-400 text-sm">Controls the appearance of the tour popups</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button Icon={Sun
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
-                    <Button Icon={Monitor
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
-                    <Button Icon={Moon
-                    } onClick={() => "lol"} popupTheme={popupTheme} />
+                    <Button Icon={Sun} label="light" active={uiTheme} onClick={handleSetUiTheme} />
+                    <Button Icon={Monitor} label="system" active={uiTheme} onClick={handleSetUiTheme} />
+                    <Button Icon={Moon} label="dark" active={uiTheme} onClick={handleSetUiTheme} />
                 </div>
             </div>
+
             <div className="h-0.5 w-full bg-white/5" />
 
-            {/* Logout Button */}
-            <div className="border-t border-gray-800">
+            {/* Logout */}
+            <div>
                 <button
                     onClick={handleLogout}
-                    className="w-full py-3 bg-red-400 hover:bg-red-500 rounded-lg font-medium flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-all text-white"
                 >
                     <LogOut className="size-4" />
                     Logout
                 </button>
             </div>
         </div>
-    )
-}
-
-interface ButtonProps {
-    Icon: LucideIcon;           // ← This is the correct type
-    onClick?: () => void;
-    popupTheme?: "light" | "dark";
-    children?: React.ReactNode; // optional text
-}
-
-const Button: React.FC<ButtonProps> = ({ Icon, onClick, popupTheme }) => {
-    return (
-        <button
-            onClick={onClick}
-            className={`p-3 w-full rounded-lg transition-all flex items-center justify-center  ${popupTheme === "light"
-                ? "bg-white text-black ring-4 ring-green-500 shadow-lg"
-                : "bg-white/5 hover:bg-white/10"
-                }`}
-        >
-            <Icon className="w-5 h-5" />
-            {/* {<icon>} */}
-        </button>
     )
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
-import { Wand2, X, Plus, Trash2, CheckSquare } from "lucide-react"
+import { Wand2, X, Plus, Trash2, CheckSquare, Save } from "lucide-react"
 import "./index.css"
 import { MediaType, Step } from "./types"
 import { supabase } from "./config/supabase"
@@ -373,7 +373,7 @@ const SidePanel = () => {
                         <div
                             key={step._id}
                             className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${index === activeStepIndex
-                                ? 'bg-blue-900/40 border-blue-500 border'
+                                ? 'bg-indigo-900/40 border-indigo-500 border'
                                 : 'bg-white/5 hover:bg-gray-600 border border-transparent'
                                 }`}
                             onClick={() => { setActiveStep(index); console.log("index", index) }}
@@ -424,7 +424,7 @@ const SidePanel = () => {
                     ) : (
                         <button
                             onClick={startElementPicker}
-                            className="w-full py-2 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                            className="w-full py-2 bg-indigo-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors"
                             disabled={isPicking || activeStepIndex === null}
                         >
                             <Wand2 size={15} />
@@ -445,7 +445,7 @@ const SidePanel = () => {
                             id="step-placement"
                             value={currentPlacement}
                             onChange={(e) => updateStep(activeStepIndex, 'on', e.target.value)}
-                            className="w-full p-2 border border-gray-600 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 bg-white/5 text-white"
+                            className="w-full p-2 border border-gray-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-600 bg-white/5 text-white"
                         >
                             <option value="right">Right (Default)</option>
                             <option value="left">Left</option>
@@ -479,7 +479,7 @@ const SidePanel = () => {
                 </button>
                 <button
                     onClick={handleSaveCourse}
-                    className="w-full py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2 text-sm bg-indigo-500 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={steps.length === 0}
                 >
                     {
@@ -487,6 +487,7 @@ const SidePanel = () => {
                             <Loading />
                             :
                             <span className="flex items-center gap-2 justify-center ">
+                                <Save size={16} />
                                 {courseId ? "Update" : "Save"} Guide
                             </span>
                     }
