@@ -1,4 +1,3 @@
-// src/components/SettingsPanel.tsx
 import React, { useState, useEffect } from "react"
 import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon } from "lucide-react"
 import { supabase } from "../config/supabase"
@@ -56,10 +55,11 @@ const Button: React.FC<ButtonProps> = ({ Icon, label, active, onClick }) => {
     return (
         <button
             onClick={() => onClick(label)}
+            // Inactive state uses explicit light (default) and dark variants
             className={`p-3 w-full rounded-lg transition-all flex items-center justify-center border-2 
                 ${isActive
-                    ? "bg-indigo-500 text-white border-indigo-500 shadow-md"
-                    : "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                    ? "bg-indigo-500 text-white border-indigo-500 shadow-md" // Active state
+                    : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600" // Inactive state
                 }`}
         >
             <Icon className="w-5 h-5" />
@@ -142,44 +142,54 @@ export default function Settings() {
     }, [popupTheme])
 
     if (loading) {
-        return <div className="p-8 text-center bg-gray-900 text-white">Loading...</div>
+        // Loading state respects the dark/light class on the root element
+        return <div className="p-8 text-center bg-white text-gray-900 dark:bg-gray-900 dark:text-white">Loading...</div>
     }
 
     return (
-        <div className="space-y-4 bg-gray-900 text-white min-w-[300px]">
+        // Main container sets the default light theme and dark variant overrides
+        <div className="p-3 space-y-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => nav(-1)}
-                    className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors"
+                    // Button styling: Light default, Dark overrides
+                    className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                 >
                     <ChevronLeft size="16" />
                 </button>
                 <h3 className="text-xl font-semibold">Profile & Settings</h3>
             </div>
 
-            {/* User */}
-
-            <div className="p-4 bg-gray-800 flex gap-4 rounded-lg shadow-xl">
+            {/* User Profile */}
+            <div
+                // Light default, Dark override for background and text
+                className="p-4 bg-gray-100 dark:bg-gray-800  flex gap-4 rounded-lg"
+            >
                 <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold">
                     {user?.avatar ? (
                         <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                        <User className="w-8 h-8 text-indigo-400" />
+                        <User className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
                     )}
                 </div>
                 <div className="space-y-1 text-left">
                     <h2 className="text-xl font-bold">{user?.name || "Guest User"}</h2>
-                    <p className="text-sm text-gray-400 truncate">{user?.email || "Not logged in"}</p>
+                    {/* Text color adjusted for both modes */}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user?.email || "Not logged in"}</p>
                 </div>
             </div>
 
-            <div className="h-0.5 w-full bg-white/5" />
+            {/* Divider */}
+            {/* <div className="h-0.5 w-full bg-gray-200 dark:bg-white/5" /> */}
 
             {/* Popup Theme */}
-            <div className="flex flex-col rounded-xl gap-2 p-3 bg-gray-800/50">
+            <div
+                // Container background and border adjusted for both modes
+                className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700"
+            >
                 <div className="mb-2">
                     <p className="font-medium text-lg">Extension UI Theme</p>
-                    <p className="text-gray-400 text-sm">Changes extension popup appearance</p>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes extension popup appearance</p>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <Button Icon={Sun} label="light" active={popupTheme} onClick={handleSetPopupTheme} />
@@ -189,10 +199,13 @@ export default function Settings() {
             </div>
 
             {/* UI Theme */}
-            <div className="flex flex-col rounded-xl gap-2 p-3 bg-gray-800/50">
+            <div
+                // Container background and border adjusted for both modes
+                className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50  dark:border-gray-700"
+            >
                 <div className="mb-2">
                     <p className="font-medium text-lg">Guide UI Theme</p>
-                    <p className="text-gray-400 text-sm">Controls the appearance of the tour popups</p>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes guide popup appearance</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button Icon={Sun} label="light" active={uiTheme} onClick={handleSetUiTheme} />
@@ -201,12 +214,14 @@ export default function Settings() {
                 </div>
             </div>
 
-            <div className="h-0.5 w-full bg-white/5" />
+            {/* Divider */}
+            {/* <div className="h-0.5 w-full bg-gray-200 dark:bg-white/5" /> */}
 
             {/* Logout */}
             <div>
                 <button
                     onClick={handleLogout}
+                    // Retains solid red for both themes, uses white text
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-all text-white"
                 >
                     <LogOut className="size-4" />

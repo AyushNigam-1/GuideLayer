@@ -11,7 +11,7 @@ export const config: PlasmoCSConfig = {
 
 const Course = () => {
     const nav = useNavigate()
-    const [isLoading, setLoading] = useState<Boolean>(false)
+    const [isLoading, setLoading] = useState<boolean>(false)
     const { state } = useLocation()
     const data = state as { id: number; title: string; description: string; icon: string, baseUrl: string } | null
 
@@ -28,7 +28,7 @@ const Course = () => {
                 courseId: data!.id,
                 baseUrl: data!.baseUrl
             })
-            // console.log("working")
+            // window.close() // Optional: close popup immediately after sending message
         } catch (err) {
             console.error("Direct message failed:", err)
         }
@@ -36,6 +36,7 @@ const Course = () => {
             setLoading(false)
         }
     }
+
     const handleUpdate = async () => {
         if (!chrome.sidePanel) {
             return
@@ -45,6 +46,7 @@ const Course = () => {
             if (!tab?.id) {
                 return
             }
+            // Save course details to session storage so the side panel can load it
             await chrome.storage.session.set({
                 sidebarProps: data
             });
@@ -56,40 +58,66 @@ const Course = () => {
         } catch (error: any) {
         }
     }
+
+    // Default to light theme background and text, then explicitly override for dark mode
     return (
-        <div className="space-y-4" >
+        <div className="space-y-4 p-3 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]" >
+
+            {/* Header and Back Button */}
             <div className="flex items-center gap-2">
-                <button onClick={() => nav(-1)} className="p-1 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" >
+                <button
+                    onClick={() => nav(-1)}
+                    // Light default (bg-gray-100), Dark override (dark:bg-gray-800)
+                    className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                >
                     <ChevronLeft size="16" />
                 </button>
                 <h3 className="text-xl font-semibold">Guide Details</h3>
             </div>
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <img src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${data?.icon}`} alt="" className="w-10 rounded-md" />
-                    <div>
+
+            {/* Course Summary Block */}
+            <div className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                    {/* Course Icon */}
+                    <img
+                        src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${data?.icon}`}
+                        alt=""
+                        className="w-10 rounded-md"
+                    />
+                    {/* Title and Author */}
+                    <div className="text-left">
                         <h3 className="text-lg font-bold">
                             {data?.title}
                         </h3>
-                        <h4>
+                        <h4 className="text-sm text-gray-500 dark:text-gray-400">
                             by Ayush Nigam
                         </h4>
                     </div>
                 </div>
-                {/* <button className="p-2 bg-gray-800 rounded-md flex items-center gap-3 hover:bg-gray-700 transition-colors" onClick={() => handleUpdate()} >
-                    <Edit size="20" />
-                </button> */}
             </div>
-            <h4 className="text-sm">
+
+            {/* Description */}
+            <h4 className="text-sm text-gray-700 dark:text-gray-300 p-1">
                 {data?.description}
             </h4>
-            <button className="w-full py-2 flex items-center gap-2 justify-center   bg-indigo-400 text-white rounded-lg font-semibold shadow-lg hover:bg-blue-500 transition-colors " onClick={handleUpdate} >
+
+            {/* Edit Guide Button */}
+            <button
+                onClick={handleUpdate}
+                className="w-full py-2 flex items-center gap-2 justify-center bg-indigo-500 text-white rounded-lg font-semibold shadow-md hover:bg-indigo-600 transition-colors"
+            >
                 <span className="flex items-center gap-2 justify-center">
                     <Pencil size={16} />
                     Edit Guide
                 </span>
             </button>
-            <button className="w-full py-2  bg-indigo-400 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-500 transition-colors " onClick={handleStartTour} >
+
+            {/* Start Guide Button */}
+            <button
+                onClick={handleStartTour}
+                className="w-full py-2 bg-green-600 text-white rounded-lg font-semibold shadow-md hover:bg-green-700 transition-colors"
+                disabled={isLoading!}
+            >
                 {
                     isLoading ?
                         <Loading />
