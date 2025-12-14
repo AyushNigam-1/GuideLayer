@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare, Save } from "lucide-react"
 import "./index.css"
+// Assuming types.ts defines MediaType and Step
 import { MediaType, Step } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
@@ -25,7 +26,7 @@ const SidePanel = () => {
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
         file: '',
         element: '',
-        on: 'right',  // Set default placement
+        on: 'right', // Set default placement
         order_index: 0,
         audio: ""
     }]);
@@ -235,7 +236,7 @@ const SidePanel = () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]?.id) return
             chrome.tabs.sendMessage(
-                tabs[0].id,
+                tabs[0].id!,
                 { action: "START_ELEMENT_PICKER" },
                 () => {
                     if (chrome.runtime.lastError) {
@@ -253,7 +254,7 @@ const SidePanel = () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (!tabs[0]?.id) return
             chrome.tabs.sendMessage(
-                tabs[0].id,
+                tabs[0].id!,
                 { action: "STOP_ELEMENT_PICKER" },
                 () => {
                     if (chrome.runtime.lastError) {
@@ -333,19 +334,25 @@ const SidePanel = () => {
 
     const activeStep = steps[activeStepIndex];
     const currentPlacement = activeStep?.on || "right";
-    if (steps.length === 0) {
-        return (
-            <div className="p-4 flex flex-col h-full bg-gray-50 font-inter items-center justify-center">
-                <p className="text-gray-500">Loading tour data...</p>
-            </div>
-        );
+
+    // Check if the initial steps array is just the default placeholder and we are still loading or have loaded nothing
+    if (steps.length === 0 || (steps.length === 1 && steps[0]._id === 'step-1' && !courseId && !metadata.title)) {
+        if (isLoading) {
+            return (
+                <div className="p-4 flex flex-col h-full bg-gray-900 text-white items-center justify-center">
+                    <Loading />
+                </div>
+            );
+        }
     }
 
 
     return (
-        <div className="p-4 flex flex-col h-full bg-gray-900 text-white font-mono space-y-4">
+        <div className="p-4 flex flex-col h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white font-mono space-y-4">
             <h3 className="text-lg font-bold"> {courseId ? "Update" : "New"} Guide</h3>
-            <hr className="border-gray-700" />
+            <hr className="border-gray-300 dark:border-gray-700" />
+
+            {/* Metadata Inputs (Assuming Input and FileUpload components handle dark mode internally) */}
             <Input
                 label="Title"
                 value={metadata.title}
@@ -366,26 +373,34 @@ const SidePanel = () => {
                 isTextArea={true}
             />
             <FileUpload file={metadata.icon} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Icon" type="icon" />
+
+            {/* Step Management List */}
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
-                <div className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-700 rounded-lg bg-gray-800 shadow-inner custom-scrollbar">
+                <div
+                    // List container: Light default, Dark explicit border/background/shadow
+                    className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-inner custom-scrollbar"
+                >
                     {steps.map((step, index) => (
                         <div
                             key={step._id}
-                            className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${index === activeStepIndex
-                                ? 'bg-indigo-900/40 border-indigo-500 border'
-                                : 'bg-white/5 hover:bg-gray-600 border border-transparent'
+                            className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all 
+                                ${index === activeStepIndex
+                                    // Active: Light default (bg-indigo-100/40), Dark override (dark:bg-indigo-900/40)
+                                    ? 'bg-indigo-100/40 border-indigo-500 border dark:bg-indigo-900/40'
+                                    // Inactive: Light default (bg-white), Dark override (dark:bg-white/5)
+                                    : 'bg-white hover:bg-gray-200 border border-transparent dark:bg-white/5 dark:hover:bg-gray-600'
                                 }`}
                             onClick={() => { setActiveStep(index); console.log("index", index) }}
                         >
-                            <span className="truncate text-sm font-medium text-gray-200">
+                            <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-200">
                                 {index + 1}. {step.text.substring(0, 30) || "New Step"}
                             </span>
                             <div className="flex items-center space-x-2">
-                                {step.element && <CheckSquare className="w-4 h-4 text-green-400" />}
+                                {step.element && <CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); deleteStep(index); }}
-                                    className="p-1 text-red-400 hover:text-red-300 transition-colors rounded-full hover:bg-gray-600"
+                                    className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -395,8 +410,12 @@ const SidePanel = () => {
                 </div>
             </div>
 
+            {/* Active Step Editor */}
             {activeStep && (
-                <div className="flex flex-col space-y-3 p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-md mb-4">
+                <div
+                    // Editor Panel: Light default, Dark explicit border/background
+                    className="flex flex-col space-y-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-md mb-4"
+                >
                     <Input
                         label="Text"
                         value={activeStep.text}
@@ -406,6 +425,8 @@ const SidePanel = () => {
                     />
                     <FileUpload file={activeStep.file} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Image/Video (Optional)" type="file" />
                     <FileUpload file={activeStep.audio} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Audio (Optional)" type="audio" />
+
+                    {/* Element Selector Field */}
                     <Input
                         label="Element Selector"
                         value={activeStep.element}
@@ -413,6 +434,8 @@ const SidePanel = () => {
                         placeholder="e.g #centeredDiv"
                         disabled={true}
                     />
+
+                    {/* Element Picker Buttons */}
                     {isPicking ? (
                         <button
                             onClick={handleAbortPicking}
@@ -431,21 +454,26 @@ const SidePanel = () => {
                             Pick Element
                         </button>
                     )}
-                    <p className="mt-2 text-xs text-gray-400 italic">
+
+                    {/* Picker Info */}
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
                         {isPicking
                             ? "Click to select, or press Cancel."
                             : "Click to assign a target element."
                         }
                     </p>
+
+                    {/* Alignment Selector */}
                     <div>
-                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-300 mb-1">
+                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Guide Alignment
                         </label>
                         <select
                             id="step-placement"
                             value={currentPlacement}
                             onChange={(e) => updateStep(activeStepIndex, 'on', e.target.value)}
-                            className="w-full p-2 border border-gray-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-600 bg-white/5 text-white"
+                            // Select dark styling: dark background, white text, dark border
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         >
                             <option value="right">Right (Default)</option>
                             <option value="left">Left</option>
@@ -456,20 +484,9 @@ const SidePanel = () => {
 
                 </div>
             )}
-            {/* <div className="flex items-center gap-2 p-2 bg-gray-800 rounded-md mb-4">
-                <Volume2 className="w-4 h-4 text-gray-400" />
-                <label className="text-xs font-medium cursor-pointer flex items-center">
-                    <input
-                        type="checkbox"
-                        checked={enableVoice}
-                        onChange={(e) => setEnableVoice(e.target.checked)}
-                        className="mr-1 rounded"
-                    />
-                    Enable Voice Narration
-                </label>
-            </div> */}
+
             {/* Footer / Save Button */}
-            <div className="mt-auto pt-4 border-t border-gray-700 space-y-2">
+            <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-700 space-y-2">
                 <button
                     onClick={addStep}
                     className=" w-full text-sm py-2 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
@@ -498,4 +515,3 @@ const SidePanel = () => {
 }
 
 export default SidePanel
-

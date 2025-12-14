@@ -35,7 +35,6 @@ const applyTheme = (theme: ThemeValue) => {
         root.classList.add("dark")
         return
     }
-
     // system mode
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
     root.classList.toggle("dark", prefersDark)
@@ -119,8 +118,6 @@ export default function Settings() {
             chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => {
                 if (result.popupTheme) setPopupTheme(result.popupTheme)
                 if (result.uiTheme) setUiTheme(result.uiTheme)
-
-                // Apply stored theme on load
                 if (result.popupTheme) applyTheme(result.popupTheme)
             })
         } else {
@@ -142,7 +139,6 @@ export default function Settings() {
     }, [popupTheme])
 
     if (loading) {
-        // Loading state respects the dark/light class on the root element
         return <div className="p-8 text-center bg-white text-gray-900 dark:bg-gray-900 dark:text-white">Loading...</div>
     }
 
@@ -162,7 +158,6 @@ export default function Settings() {
 
             {/* User Profile */}
             <div
-                // Light default, Dark override for background and text
                 className="p-4 bg-gray-100 dark:bg-gray-800  flex gap-4 rounded-lg"
             >
                 <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold">
@@ -174,17 +169,11 @@ export default function Settings() {
                 </div>
                 <div className="space-y-1 text-left">
                     <h2 className="text-xl font-bold">{user?.name || "Guest User"}</h2>
-                    {/* Text color adjusted for both modes */}
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user?.email || "Not logged in"}</p>
                 </div>
             </div>
 
-            {/* Divider */}
-            {/* <div className="h-0.5 w-full bg-gray-200 dark:bg-white/5" /> */}
-
-            {/* Popup Theme */}
             <div
-                // Container background and border adjusted for both modes
                 className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700"
             >
                 <div className="mb-2">
@@ -198,9 +187,7 @@ export default function Settings() {
                 </div>
             </div>
 
-            {/* UI Theme */}
             <div
-                // Container background and border adjusted for both modes
                 className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50  dark:border-gray-700"
             >
                 <div className="mb-2">
