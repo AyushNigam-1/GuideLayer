@@ -90,7 +90,7 @@ export default function Popup() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     // Updated input to be light default, and explicitly dark mode friendly
-                    className="w-full pl-10 pr-4 py-2 bg-gray-200 text-gray-900 rounded-md focus:border-indigo-500 focus:outline-none dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:focus:border-green-500"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-100 text-gray-900 rounded-md focus:border-indigo-500 focus:outline-none dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:focus:border-green-500"
                 />
             </div>
             <ul className="space-y-2 ">
@@ -107,7 +107,7 @@ export default function Popup() {
                                         state: course
                                     })}
                                 >
-                                    <div className="p-2 bg-gray-200 rounded-md flex items-center gap-3 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700">
+                                    <div className="p-2 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700">
                                         {/* Image URL remains external */}
                                         <img src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${course.icon}`} alt="" className="w-16 rounded-md" />
 

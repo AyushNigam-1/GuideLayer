@@ -1,6 +1,7 @@
 import { StepOptions } from "shepherd.js";
 
 export type Placement = 'top' | 'right' | 'bottom' | 'left';
+export type ThemeValue = "light" | "dark" | "system"
 
 export interface Step {
     id?: number;

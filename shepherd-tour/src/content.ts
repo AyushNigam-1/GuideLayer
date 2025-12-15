@@ -5,14 +5,32 @@ import type { Placement } from "@floating-ui/dom"
 import { supabase } from './config/supabase'
 import "../css/pro-theme.css"
 import 'shepherd.js/dist/css/shepherd.css';
-import { Message, StepData } from "./types"
+import { Message, StepData, ThemeValue } from "./types"
 
 
 let tourSteps: StepData[] = []
 let speechUtterance: SpeechSynthesisUtterance | null = null
 let isSpeaking: boolean = false
 let currentAudio: HTMLAudioElement | null = null
+let theme = ""
 
+chrome.storage.sync.get("uiTheme", (result) => {
+    const storedTheme = result.uiTheme as ThemeValue;
+    console.log("storedTheme", storedTheme)
+    theme = storedTheme
+})
+const handleStorageChange = (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    areaName: string
+) => {
+    console.log("theme")
+    if (areaName === "sync" && changes.uiTheme) {
+        console.log("theme changed", changes.uiTheme.newValue)
+        theme = changes.uiTheme.newValue
+        // applyTheme(changes.popupTheme.newValue as ThemeValue);
+    }
+};
+chrome.storage.onChanged.addListener(handleStorageChange);
 const playStepAudio = (audioUrl: string): void => {
     // Stop any previous audio
     if (currentAudio) {
@@ -85,6 +103,8 @@ const stopSpeech = (): void => {
 const popupHtml = (text: string, filename?: string): string => {
     const BASE_URL = 'https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images';
     let mediaHtml = '';
+    const themeClass = theme === 'light' ? 't3-theme-light' : 't3-theme-dark';
+
     if (filename) {
         const mediaUrl = `${BASE_URL}/${filename}`;
         const isVideo = /\.(mp4|mov|webm|ogg)$/i.test(filename);
@@ -101,8 +121,9 @@ const popupHtml = (text: string, filename?: string): string => {
             `;
         }
     }
+
     return `
-        <div class="t3-card">
+        <div class="t3-card ${themeClass}">
             <div class="t3-card-body">
                 <!-- Media Element (Image or Video) -->
                 ${mediaHtml}

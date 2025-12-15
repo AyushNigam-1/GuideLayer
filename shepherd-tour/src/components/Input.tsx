@@ -8,7 +8,7 @@ const Input = ({ label, value, onChange, isTextArea, placeholder, disabled = fal
         focus:border-indigo-500
         
         /* Light Mode Defaults */
-        bg-white text-gray-900 border-gray-300 placeholder-gray-500 border
+        bg-gray-100 text-gray-900 border-gray-300 placeholder-gray-500 border
         
         /* Dark Mode Overrides */
         dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400

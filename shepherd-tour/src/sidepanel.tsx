@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, ChangeEvent } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare, Save } from "lucide-react"
 import "./index.css"
 // Assuming types.ts defines MediaType and Step
-import { MediaType, Step } from "./types"
+import { MediaType, Step, ThemeValue } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
 import Loading from "./components/Loading"
@@ -346,6 +346,37 @@ const SidePanel = () => {
         }
     }
 
+    const applyTheme = (theme: ThemeValue) => {
+        const root = document.documentElement
+        if (theme === "light") {
+            root.classList.remove("dark")
+            return
+        }
+        if (theme === "dark") {
+            root.classList.add("dark")
+            return
+        }
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+        root.classList.toggle("dark", prefersDark)
+    }
+
+    useEffect(() => {
+        if (chrome?.storage?.sync) {
+            chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => applyTheme(result.popupTheme))
+        }
+        const handleStorageChange = (
+            changes: { [key: string]: chrome.storage.StorageChange },
+            areaName: string
+        ) => {
+            if (areaName === "sync" && changes.popupTheme) {
+                applyTheme(changes.popupTheme.newValue as ThemeValue);
+            }
+        };
+        chrome.storage.onChanged.addListener(handleStorageChange);
+        return () => {
+            chrome.storage.onChanged.removeListener(handleStorageChange);
+        };
+    }, [])
 
     return (
         <div className="p-4 flex flex-col h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white font-mono space-y-4">
@@ -365,6 +396,7 @@ const SidePanel = () => {
                 onChange={(e) => setMetadata((prev) => ({ ...prev, baseUrl: e.target.value }))}
                 placeholder="e.g chatgpt.com"
             />
+            <FileUpload file={metadata.icon} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Icon" type="icon" />
             <Input
                 label="Description"
                 placeholder="e.g Course Description here"
@@ -372,7 +404,8 @@ const SidePanel = () => {
                 onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))}
                 isTextArea={true}
             />
-            <FileUpload file={metadata.icon} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Icon" type="icon" />
+
+            <hr className="border-gray-300 dark:border-gray-700" />
 
             {/* Step Management List */}
             <div className="mb-4">

@@ -1,8 +1,9 @@
 import { useEffect } from "react"
 import { Outlet } from "react-router-dom"
+import { ThemeValue } from "./types"
 
 const Layout = () => {
-    type ThemeValue = "light" | "dark" | "system"
+    // type ThemeValue = "light" | "dark" | "system"
 
     const applyTheme = (theme: ThemeValue) => {
         const root = document.documentElement
@@ -19,9 +20,7 @@ const Layout = () => {
     }
     useEffect(() => {
         if (chrome?.storage?.sync) {
-            chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => {
-                if (result.popupTheme) applyTheme(result.popupTheme)
-            })
+            chrome.storage.sync.get(["popupTheme", "uiTheme"], (result) => applyTheme(result.popupTheme))
         }
     }, [])
     return (
