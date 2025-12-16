@@ -28,7 +28,8 @@ const SidePanel = () => {
         element: '',
         on: 'right', // Set default placement
         order_index: 0,
-        audio: ""
+        audio: "",
+        site_url: ""
     }]);
 
     useEffect(() => {
@@ -86,6 +87,7 @@ const SidePanel = () => {
                     on: step.on || "right",
                     order_index: index,
                     course_id: courseId || "", // temporary
+                    site_url: step.site_url
                 }))
                 .filter(step => step.text !== "");
             if (courseId) {
@@ -170,7 +172,8 @@ const SidePanel = () => {
             element: '',
             on: 'right', // Set default placement
             order_index: steps.length,
-            audio: ""
+            audio: "",
+            site_url: ""
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
         setActiveStepIndex(steps.length);
@@ -455,6 +458,12 @@ const SidePanel = () => {
                         onChange={(e: any) => updateStep(activeStepIndex, 'text', e.target.value)}
                         placeholder="Write Guide text here"
                         isTextArea={true}
+                    />
+                    <Input
+                        label="Site Url"
+                        value={activeStep.site_url}
+                        onChange={(e) => updateStep(activeStepIndex, 'site_url', e.target.value)}
+                        placeholder="e.g chatgpt.com/settings"
                     />
                     <FileUpload file={activeStep.file} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Image/Video (Optional)" type="file" />
                     <FileUpload file={activeStep.audio} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Audio (Optional)" type="audio" />

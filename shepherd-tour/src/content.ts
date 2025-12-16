@@ -123,7 +123,7 @@ const popupHtml = (text: string, filename?: string): string => {
     }
 
     return `
-        <div class="t3-card ${themeClass}">
+        <div class="t3-card">
             <div class="t3-card-body">
                 <!-- Media Element (Image or Video) -->
                 ${mediaHtml}
@@ -307,7 +307,7 @@ const checkPageReady = (): void => {
     try {
         const tour: Tour = new Shepherd.Tour({
             defaultStepOptions: {
-                classes: "shepherd-theme-custom",
+                classes: theme,
                 scrollTo: false,
 
                 // cancelIcon: { enabled: true },
@@ -393,8 +393,8 @@ const checkPageReady = (): void => {
             const currentStep = tourSteps.find(s => s._id === stepId)
 
             // Stop any previous audio/voice
-            stopSpeech()
-            stopAudio()
+            // stopSpeech()
+            // stopAudio()
             console.log(currentStep?.audio, " audio file ")
             // Play audio file if exists
             if (currentStep?.audio) {
@@ -403,7 +403,7 @@ const checkPageReady = (): void => {
             } else {
                 // Fallback to voice if no audio
                 const stepText: string = event.step.options.text as string
-                speakText(stepText)
+                // speakText(stepText)
             }
             // const closeBtn = document.querySelector('.close-btn')
             // if (closeBtn) {

@@ -12,7 +12,8 @@ export interface Step {
     on: Placement;  // The guide popup alignment
     order_index: number
     course_id?: string,
-    audio: string
+    audio: string,
+    site_url: string
 }
 
 export interface StepData extends Partial<StepOptions> {
