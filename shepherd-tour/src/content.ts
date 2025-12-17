@@ -123,7 +123,7 @@ const popupHtml = (text: string, filename?: string): string => {
     }
 
     return `
-        <div class="t3-card">
+        <div class="t3-card ${themeClass}">
             <div class="t3-card-body">
                 <!-- Media Element (Image or Video) -->
                 ${mediaHtml}
@@ -164,32 +164,19 @@ type SendResponse = (response?: { success: boolean; error?: string, data?: any }
 chrome.runtime.onMessage.addListener((message: Message, _: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
     if (message.action === "startTour") {
         console.log("working lol")
-        // Extract baseUrl from message (e.g. "https://chat.openai.com")
-        const expectedBaseUrl = message.baseUrl
-        console.log(message)
-        const currentUrl = window.location.href
-        const currentBase = new URL(currentUrl).origin
-        console.log(currentBase !== expectedBaseUrl, currentBase, expectedBaseUrl)
-        // Check if current site matches expected base URL
-        if (currentBase !== expectedBaseUrl) {
+        if (window.location.href != message.baseUrl) {
             console.log("wrong url")
-            showWrongSiteWarning(expectedBaseUrl)
+            showWrongSiteWarning(message.baseUrl)
             sendResponse({ success: false, error: "Wrong website" })
             return true
         }
-
-        // If correct site → start tour
         handleStartTour(message.courseId!, sendResponse)
         return true
-        // handleStartTour(message.courseId!, sendResponse)
-        // return true
     }
 })
 
 function showWrongSiteWarning(correctUrl: string) {
-    // Remove any existing warning
     document.querySelector("#guide-layer-wrong-site")?.remove()
-
     const warning = document.createElement("div")
     warning.id = "guide-layer-wrong-site"
     warning.innerHTML = `
@@ -279,7 +266,6 @@ function showWrongSiteWarning(correctUrl: string) {
         warning.remove()
     })
 
-    // Auto-remove after 10 seconds (optional)
     setTimeout(() => {
         warning.style.transition = "all 0.5s"
         warning.style.transform = "translateX(-50%) translateY(-20px)"
@@ -309,8 +295,7 @@ const checkPageReady = (): void => {
             defaultStepOptions: {
                 classes: theme,
                 scrollTo: false,
-
-                // cancelIcon: { enabled: true },
+                cancelIcon: { enabled: true },
             }
         })
 
@@ -340,19 +325,20 @@ const checkPageReady = (): void => {
                 if (stepData._id !== 'welcome') {
                     buttons.push({
                         text: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
-       stroke-width="2" stroke="currentColor" width="24" height="24">
-  <path stroke-linecap="round" stroke-linejoin="round"  d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" />
-</svg> 
-`, action: tour.back, classes: 'shepherd-button'
+                                    stroke-width="2" stroke="currentColor" width="24" height="24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"  d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" />
+                                </svg> `,
+                        action: tour.back,
+                        classes: 'shepherd-button'
                     });
                 }
                 buttons.push({
-                    text: stepData.buttonText || `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
-       stroke-width="2" stroke="currentColor" width="24" height="24">
-    <path stroke-linecap="round" stroke-linejoin="round" 
-          d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
-  </svg>
-`,
+                    text: stepData.buttonText ||
+                        `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                            stroke-width="2" stroke="currentColor" width="24" height="24">
+                            <path stroke-linecap="round" stroke-linejoin="round" 
+                                d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
+                        </svg>`,
                     action: stepData._id === 'submit-response' ? tour.complete : tour.next,
                     classes: stepData._id === 'submit-response' ? 'shepherd-button' : ''
                 });
@@ -361,7 +347,19 @@ const checkPageReady = (): void => {
                 const stepConfig: Partial<StepOptions> = {
                     id: stepData._id,
                     text: popupHtml(stepData.text, stepData.file),
-                    buttons
+                    buttons,
+                    beforeShowPromise: () => {
+                        return new Promise<void>((resolve, reject) => {
+                            if (stepData.site_url) {
+                                if (stepData.site_url !== window.location.href) {
+                                    showWrongSiteWarning(stepData.site_url)
+                                    reject()
+                                    return
+                                }
+                            }
+                            resolve()
+                        })
+                    }
                 };
 
                 if (element && element.offsetParent) {
@@ -373,7 +371,6 @@ const checkPageReady = (): void => {
                     console.warn(`[Tour] Step skipped due to missing element: ${stepData._id}`);
                     return;
                 }
-
                 tour.addStep(stepConfig as StepOptions);
                 addedSteps++;
                 console.log(`[Tour] Added step: ${stepData._id} → ${selector || 'centered'}`);
@@ -385,46 +382,21 @@ const checkPageReady = (): void => {
         if (addedSteps === 0) {
             throw new Error('No valid steps could be added')
         }
+
         tour.on('show', (event: { step: Step }) => {  // Fixed: Now uses imported Event type
             const stepData = event.step.options as any
             const stepId = stepData.id
-
-            // Find the step in tourSteps array
             const currentStep = tourSteps.find(s => s._id === stepId)
-
             // Stop any previous audio/voice
             // stopSpeech()
             // stopAudio()
             console.log(currentStep?.audio, " audio file ")
-            // Play audio file if exists
             if (currentStep?.audio) {
-
                 playStepAudio(currentStep.audio)
             } else {
-                // Fallback to voice if no audio
                 const stepText: string = event.step.options.text as string
-                // speakText(stepText)
+                speakText(stepText)
             }
-            // const closeBtn = document.querySelector('.close-btn')
-            // if (closeBtn) {
-            //     tour.on('show', (event: { step: Step }) => {
-            //         // const stepText: string = event.step.options.text as string
-            //         // speakText(stepText) // Narrate on show
-
-            //         // CRITICAL: Add click handler to close button
-            //         const closeBtn = document.querySelector('.close-btn')
-            //         if (closeBtn) {
-            //             // Remove old listener to prevent duplicates
-            //             closeBtn.replaceWith(closeBtn.cloneNode(true))
-            //             const newCloseBtn = document.querySelector('.close-btn')
-            //             newCloseBtn?.addEventListener('click', () => {
-            //                 tour.cancel()
-            //                 stopSpeech()
-            //                 console.log("[Tour] User closed the tour")
-            //             })
-            //         }
-            //     })
-            // }
         })
 
         tour.on('hide', () => {

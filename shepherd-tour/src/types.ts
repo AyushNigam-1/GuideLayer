@@ -13,7 +13,8 @@ export interface Step {
     order_index: number
     course_id?: string,
     audio: string,
-    site_url: string
+    site_url: string,
+    click_required: boolean
 }
 
 export interface StepData extends Partial<StepOptions> {
@@ -23,7 +24,9 @@ export interface StepData extends Partial<StepOptions> {
     element?: string | HTMLElement
     on?: Placement
     buttonText?: string
-    audio: string
+    audio: string,
+    site_url: string
+
 }
 
 export interface StepData {

@@ -29,7 +29,8 @@ const SidePanel = () => {
         on: 'right', // Set default placement
         order_index: 0,
         audio: "",
-        site_url: ""
+        site_url: "",
+        click_required: false
     }]);
 
     useEffect(() => {
@@ -87,7 +88,8 @@ const SidePanel = () => {
                     on: step.on || "right",
                     order_index: index,
                     course_id: courseId || "", // temporary
-                    site_url: step.site_url
+                    site_url: step.site_url,
+                    click_required: step.click_required
                 }))
                 .filter(step => step.text !== "");
             if (courseId) {
@@ -173,7 +175,8 @@ const SidePanel = () => {
             on: 'right', // Set default placement
             order_index: steps.length,
             audio: "",
-            site_url: ""
+            site_url: "",
+            click_required: false
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
         setActiveStepIndex(steps.length);
@@ -198,7 +201,8 @@ const SidePanel = () => {
     };
 
     // Handler for updating top-level fields like text and image
-    const updateStep = useCallback((index: number, field: any, value: string) => {
+    const updateStep = useCallback((index: number, field: any, value: string | boolean) => {
+        console.log(field, value)
         setSteps(prevSteps => {
             const newSteps = [...prevSteps];
             newSteps[index] = {
@@ -207,6 +211,7 @@ const SidePanel = () => {
             };
             return newSteps;
         });
+        console.log(steps)
     }, []);
 
     const handleElementSelection = useCallback((selector: string) => {
@@ -504,7 +509,20 @@ const SidePanel = () => {
                             : "Click to assign a target element."
                         }
                     </p>
-
+                    <label htmlFor="" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
+                    <div className="flex gap-2" >
+                        <input
+                            type="checkbox"
+                            defaultChecked={false}
+                            value={activeStep.click_required}
+                            // disabled={disabled}
+                            onChange={(e) => updateStep(activeStepIndex, 'click_required', e.target.checked)}
+                            className={`focus:outline-none focus:ring-2 focus:ring-indigo-500/50 
+                                focus:border-indigo-500`}
+                        // placeholder={placeholder}
+                        />
+                        <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Click Required</p>
+                    </div>
                     {/* Alignment Selector */}
                     <div>
                         <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
