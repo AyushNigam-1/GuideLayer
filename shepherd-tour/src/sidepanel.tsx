@@ -387,11 +387,8 @@ const SidePanel = () => {
     }, [])
 
     return (
-        <div className="p-4 flex flex-col h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white font-mono space-y-4">
-            <h3 className="text-lg font-bold"> {courseId ? "Update" : "New"} Guide</h3>
-            <hr className="border-gray-300 dark:border-gray-700" />
-
-            {/* Metadata Inputs (Assuming Input and FileUpload components handle dark mode internally) */}
+        <div className="p-4 flex flex-col h-full bg-white  dark:bg-gray-900 dark:text-white font-mono space-y-6">
+            <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300"> {courseId ? "Update" : "New"} Guide</h3>
             <Input
                 label="Title"
                 value={metadata.title}
@@ -415,21 +412,17 @@ const SidePanel = () => {
 
             <hr className="border-gray-300 dark:border-gray-700" />
 
-            {/* Step Management List */}
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
                 <div
-                    // List container: Light default, Dark explicit border/background/shadow
-                    className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-inner custom-scrollbar"
+                    className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-inner custom-scrollbar"
                 >
                     {steps.map((step, index) => (
                         <div
                             key={step._id}
                             className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all 
                                 ${index === activeStepIndex
-                                    // Active: Light default (bg-indigo-100/40), Dark override (dark:bg-indigo-900/40)
-                                    ? 'bg-indigo-100/40 border-indigo-500 border dark:bg-indigo-900/40'
-                                    // Inactive: Light default (bg-white), Dark override (dark:bg-white/5)
+                                    ? 'bg-indigo-100/40  dark:bg-indigo-900/40'
                                     : 'bg-white hover:bg-gray-200 border border-transparent dark:bg-white/5 dark:hover:bg-gray-600'
                                 }`}
                             onClick={() => { setActiveStep(index); console.log("index", index) }}
@@ -454,8 +447,7 @@ const SidePanel = () => {
             {/* Active Step Editor */}
             {activeStep && (
                 <div
-                    // Editor Panel: Light default, Dark explicit border/background
-                    className="flex flex-col space-y-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-md mb-4"
+                    className="flex flex-col space-y-6 rounded-lg "
                 >
                     <Input
                         label="Text"
@@ -473,9 +465,8 @@ const SidePanel = () => {
                     <FileUpload file={activeStep.file} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Image/Video (Optional)" type="file" />
                     <FileUpload file={activeStep.audio} isDeleting={isDeleting!} handleDeleteFile={handleDeleteFile} handleFileChange={handleFileChange} isUploading={isUploading!} label="Attach Audio (Optional)" type="audio" />
 
-                    {/* Element Selector Field */}
                     <Input
-                        label="Element Selector"
+                        label="Attach UI Element"
                         value={activeStep.element}
                         onChange={(e: any) => updateStep(activeStepIndex, 'element', e.target.value)}
                         placeholder="e.g #centeredDiv"
@@ -503,50 +494,57 @@ const SidePanel = () => {
                     )}
 
                     {/* Picker Info */}
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                    {/* <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
                         {isPicking
                             ? "Click to select, or press Cancel."
                             : "Click to assign a target element."
                         }
-                    </p>
-                    <label htmlFor="" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
-                    <div className="flex gap-2" >
-                        <input
-                            type="checkbox"
-                            defaultChecked={false}
-                            value={activeStep.click_required}
-                            // disabled={disabled}
-                            onChange={(e) => updateStep(activeStepIndex, 'click_required', e.target.checked)}
-                            className={`focus:outline-none focus:ring-2 focus:ring-indigo-500/50 
-                                focus:border-indigo-500`}
-                        // placeholder={placeholder}
-                        />
-                        <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Click Required</p>
-                    </div>
-                    {/* Alignment Selector */}
+                    </p> */}
                     <div>
-                        <label htmlFor="step-placement" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Actions</label>
+                        <div className="flex gap-2 items-center" >
+                            <input
+                                type="checkbox"
+                                defaultChecked={false}
+                                checked={activeStep.click_required}
+                                onChange={(e) => updateStep(activeStepIndex, 'click_required', e.target.checked)}
+                                className="w-4 h-4 accent-indigo-600 rounded border-gray-300 focus:ring-indigo-500 focus:ring-2"
+                            />
+                            <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 ">Click Required</p>
+                            <input
+                                type="checkbox"
+                                defaultChecked={false}
+                                checked={activeStep.click_required}
+                                onChange={(e) => updateStep(activeStepIndex, 'click_required', e.target.checked)}
+                                className="w-4 h-4 accent-indigo-600 rounded border-gray-300 focus:ring-indigo-500 focus:ring-2"
+
+                            />
+                            <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 ">Input Required</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="step-placement" className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-1">
                             Guide Alignment
                         </label>
                         <select
                             id="step-placement"
                             value={currentPlacement}
                             onChange={(e) => updateStep(activeStepIndex, 'on', e.target.value)}
-                            // Select dark styling: dark background, white text, dark border
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="bg-gray-200 text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white  dark:placeholder-gray-400 w-full p-2 rounded-lg text-sm transition-colors 
+                            focus:outline-none focus:ring-2 focus:ring-indigo-500/50 
+                            focus:border-indigo-500 "
                         >
-                            <option value="right">Right (Default)</option>
+                            <option value="right">Right</option>
                             <option value="left">Left</option>
                             <option value="top">Top</option>
                             <option value="bottom">Bottom</option>
                         </select>
                     </div>
-
                 </div>
             )}
 
             {/* Footer / Save Button */}
-            <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-700 space-y-2">
+            <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
                 <button
                     onClick={addStep}
                     className=" w-full text-sm py-2 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"

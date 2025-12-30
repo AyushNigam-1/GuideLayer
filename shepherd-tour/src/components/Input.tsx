@@ -8,13 +8,13 @@ const Input = ({ label, value, onChange, isTextArea, placeholder, disabled = fal
         focus:border-indigo-500
         
         /* Light Mode Defaults */
-        bg-gray-100 text-gray-900 border-gray-300 placeholder-gray-500 border
+        bg-gray-200 text-gray-900 placeholder-gray-500
         
         /* Dark Mode Overrides */
-        dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400
+        dark:bg-gray-700 dark:text-white  dark:placeholder-gray-400
         
         /* Disabled State */
-        disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed
+        disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:opacity-70 disabled:cursor-not-allowed
     `.replace(/\s+/g, ' ').trim(); // Clean up class names
 
     return (
@@ -22,7 +22,7 @@ const Input = ({ label, value, onChange, isTextArea, placeholder, disabled = fal
             {
                 label &&
                 // Label: Light default, Dark override
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-1">
                     {label}
                 </label>
             }

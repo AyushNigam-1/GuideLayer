@@ -22,7 +22,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ isUploading, isDeleting, file, 
     return (
         <div >
             {/* Label: Light default (text-gray-700), Dark override (dark:text-gray-300) */}
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{label}</label>
+            <label className="block text-sm font-bold mb-1 text-gray-600 dark:text-gray-300">{label}</label>
 
             <div
                 // Container: Light default, Dark override

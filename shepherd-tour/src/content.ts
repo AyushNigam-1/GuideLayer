@@ -5,9 +5,23 @@ import type { Placement } from "@floating-ui/dom"
 import { supabase } from './config/supabase'
 import "../css/pro-theme.css"
 import 'shepherd.js/dist/css/shepherd.css';
-import { Message, StepData, ThemeValue } from "./types"
+import { DbStep, Message, StepData, ThemeValue } from "./types"
 
+declare global {
+    interface Window {
+        __shepherdTour?: any
+    }
+}
+// ---------- TOUR STATE (GLOBAL, SINGLE SOURCE OF TRUTH) ----------
 
+let currentStepId: string | null = null
+
+let STEP_MAP: Record<string, {
+    next?: string
+    prev?: string
+    click_required?: boolean
+    element?: string
+}> = {}
 let tourSteps: StepData[] = []
 let speechUtterance: SpeechSynthesisUtterance | null = null
 let isSpeaking: boolean = false
@@ -30,6 +44,24 @@ const handleStorageChange = (
         // applyTheme(changes.popupTheme.newValue as ThemeValue);
     }
 };
+function buildStepMap(steps: StepData[]) {
+    STEP_MAP = {}
+
+    // Ensure correct order
+    const sorted = [...steps].sort((a, b) => a.order_index - b.order_index)
+
+    for (let i = 0; i < sorted.length; i++) {
+        const step = sorted[i]
+
+        STEP_MAP[step.id] = {
+            element: step.element as string,
+            click_required: step.click_required,
+            prev: sorted[i - 1]?.id,
+            next: sorted[i + 1]?.id
+        }
+    }
+}
+
 chrome.storage.onChanged.addListener(handleStorageChange);
 const playStepAudio = (audioUrl: string): void => {
     // Stop any previous audio
@@ -137,6 +169,7 @@ const popupHtml = (text: string, filename?: string): string => {
         </div>
     `;
 };
+
 const handleStartTour = async (courseId: string, sendResponse: SendResponse) => {
     try {
         const { data: steps, error } = await supabase
@@ -146,6 +179,7 @@ const handleStartTour = async (courseId: string, sendResponse: SendResponse) => 
             .order("order_index")
         tourSteps = steps as StepData[]
         console.log("tourSteps", tourSteps[0].file)
+        buildStepMap(tourSteps)
         checkPageReady()
         if (error) {
             console.error("Supabase error:", error)
@@ -164,16 +198,50 @@ type SendResponse = (response?: { success: boolean; error?: string, data?: any }
 chrome.runtime.onMessage.addListener((message: Message, _: chrome.runtime.MessageSender, sendResponse: SendResponse) => {
     if (message.action === "startTour") {
         console.log("working lol")
-        if (window.location.href != message.baseUrl) {
-            console.log("wrong url")
-            showWrongSiteWarning(message.baseUrl)
-            sendResponse({ success: false, error: "Wrong website" })
-            return true
-        }
+        console.log(window.location.href, message.baseUrl)
+        // if (window.location.href != message.baseUrl) {
+        //     console.log("wrong url")
+        //     showWrongSiteWarning(message.baseUrl)
+        //     sendResponse({ success: false, error: "Wrong website" })
+        //     return true
+        // }
         handleStartTour(message.courseId!, sendResponse)
         return true
     }
 })
+
+function waitForUIIdle(idleMs = 300, timeout = 5000) {
+    return new Promise<void>((resolve, reject) => {
+        let lastMutation = Date.now()
+        const start = Date.now()
+
+        const observer = new MutationObserver(() => {
+            lastMutation = Date.now()
+        })
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        })
+
+        const check = () => {
+            console.log("working")
+            if (Date.now() - lastMutation >= idleMs) {
+                observer.disconnect()
+                resolve()
+            } else if (Date.now() - start > timeout) {
+                observer.disconnect()
+                reject("UI did not become idle")
+            } else {
+                requestAnimationFrame(check)
+            }
+        }
+
+        check()
+    })
+}
+
 
 function showWrongSiteWarning(correctUrl: string) {
     document.querySelector("#guide-layer-wrong-site")?.remove()
@@ -231,8 +299,8 @@ function showWrongSiteWarning(correctUrl: string) {
         gap:6px;
         transition: background 0.2s, box-shadow 0.2s;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={1.5} stroke="currentColor" style="width:20px">
-  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
-</svg>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+        </svg>
 
         Go to Correct Site
       </button>
@@ -280,6 +348,14 @@ const checkPageReady = (): void => {
         setTimeout(checkPageReady, 1000)
         return
     }
+    async function goToStep(tour: Tour, stepId: string) {
+        currentStepId = stepId
+        console.log(currentStepId)
+        await waitForUIIdle()
+        await new Promise(r => requestAnimationFrame(r))
+
+        tour.show(stepId)
+    }
 
     // const hasKeyElements = document.querySelector('[contenteditable="true"]') || document.querySelector('.btn-primary')
     // if (!hasKeyElements) {
@@ -291,13 +367,18 @@ const checkPageReady = (): void => {
     console.log("[Shepherd Injector] Page ready - building multi-step tour...")
 
     try {
-        const tour: Tour = new Shepherd.Tour({
-            defaultStepOptions: {
-                classes: theme,
-                scrollTo: false,
-                cancelIcon: { enabled: true },
-            }
-        })
+        if (!window.__shepherdTour) {
+            window.__shepherdTour = new Shepherd.Tour({
+                defaultStepOptions: {
+                    classes: theme,
+                    scrollTo: true,
+                    cancelIcon: { enabled: true }
+                }
+            })
+        }
+
+        const tour = window.__shepherdTour
+
 
         let addedSteps = 0
 
@@ -327,21 +408,46 @@ const checkPageReady = (): void => {
                         text: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
                                     stroke-width="2" stroke="currentColor" width="24" height="24">
                                     <path stroke-linecap="round" stroke-linejoin="round"  d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" />
-                                </svg> `,
-                        action: tour.back,
+                                </svg>`,
+                        action: () => {
+                            const prev = STEP_MAP[currentStepId!]?.prev
+                            if (prev) goToStep(tour, prev)
+                        },
                         classes: 'shepherd-button'
-                    });
+                    })
                 }
-                buttons.push({
-                    text: stepData.buttonText ||
-                        `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
-                            stroke-width="2" stroke="currentColor" width="24" height="24">
-                            <path stroke-linecap="round" stroke-linejoin="round" 
-                                d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
-                        </svg>`,
-                    action: stepData._id === 'submit-response' ? tour.complete : tour.next,
-                    classes: stepData._id === 'submit-response' ? 'shepherd-button' : ''
-                });
+
+                if (!stepData.click_required) {
+                    buttons.push({
+                        text: stepData.buttonText || `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                                        stroke-width="2" stroke="currentColor" width="24" height="24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" 
+                                            d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
+                                    </svg>`,
+                        action: () => {
+                            console.log("working")
+                            if (stepData._id === 'submit-response') {
+                                tour.complete()
+                                return
+                            }
+
+                            const next = STEP_MAP[currentStepId!]?.next
+                            if (next) goToStep(tour, next)
+                        },
+                        classes: stepData._id === 'submit-response' ? 'shepherd-button' : ''
+                    })
+                }
+
+                // buttons.push({
+                //     text: stepData.buttonText ||
+                //         `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" 
+                //             stroke-width="2" stroke="currentColor" width="24" height="24">
+                //             <path stroke-linecap="round" stroke-linejoin="round" 
+                //                 d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
+                //         </svg>`,
+                //     action: stepData._id === 'submit-response' ? tour.complete : tour.next,
+                //     classes: stepData._id === 'submit-response' ? 'shepherd-button' : ''
+                // });
 
                 // Correct attachTo structure
                 const stepConfig: Partial<StepOptions> = {
@@ -349,15 +455,29 @@ const checkPageReady = (): void => {
                     text: popupHtml(stepData.text, stepData.file),
                     buttons,
                     beforeShowPromise: () => {
-                        return new Promise<void>((resolve, reject) => {
+                        return new Promise<void>(async (resolve, reject) => {
+                            console.log("detecting...")
                             if (stepData.site_url) {
-                                if (stepData.site_url !== window.location.href) {
+                                const expected = new URL(stepData.site_url).origin
+                                const current = window.location.origin
+                                if (current !== expected) {
                                     showWrongSiteWarning(stepData.site_url)
                                     reject()
                                     return
                                 }
                             }
                             resolve()
+                            // if (stepData.element && stepData._id !== 'welcome') {
+                            //     try {
+                            //         await waitForElement(stepData.element)
+                            //         resolve()
+                            //     } catch (err) {
+                            //         console.warn(`[Tour] Element not found: ${stepData.element}`)
+                            //         reject()
+                            //     }
+                            // } else {
+                            //     resolve()
+                            // }
                         })
                     }
                 };
@@ -387,15 +507,43 @@ const checkPageReady = (): void => {
             const stepData = event.step.options as any
             const stepId = stepData.id
             const currentStep = tourSteps.find(s => s._id === stepId)
+            currentStepId = currentStep?._id!
+            console.log(currentStep?.click_required)
             // Stop any previous audio/voice
             // stopSpeech()
             // stopAudio()
-            console.log(currentStep?.audio, " audio file ")
-            if (currentStep?.audio) {
-                playStepAudio(currentStep.audio)
-            } else {
-                const stepText: string = event.step.options.text as string
-                speakText(stepText)
+            // console.log(currentStep?.audio, " audio file ")
+            // if (currentStep?.audio) {
+            //     playStepAudio(currentStep.audio)
+            // } else {
+            //     const stepText: string = event.step.options.text as string
+            //     speakText(stepText)
+            // }
+
+            if (currentStep?.click_required) {
+                const target = document.querySelector(currentStep.element as string) as HTMLElement;
+
+                // console.log(target, event.step.getElement(), event.step.getTarget())
+                if (target) {
+                    console.log(`[Tour] Step ${stepId} requires click on target.`);
+                    const handleProceed = async () => {
+                        target.removeEventListener('click', handleProceed);
+                        await waitForUIIdle()
+                        const next = STEP_MAP[currentStepId!]?.next
+                        console.log("next", next)
+                        if (next) goToStep(tour, next)
+                        // tour.show("step-1767090377018")
+                    };
+                    target.addEventListener('click', handleProceed);
+                    // Cleanup listener if user cancels tour or goes back
+                    const cleanup = () => {
+                        target.removeEventListener('click', handleProceed);
+                        tour.off('hide', cleanup);
+                        tour.off('cancel', cleanup);
+                    };
+                    tour.once('hide', cleanup);
+                    tour.once('cancel', cleanup);
+                }
             }
         })
 

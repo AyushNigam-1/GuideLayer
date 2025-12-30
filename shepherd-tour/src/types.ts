@@ -16,6 +16,12 @@ export interface Step {
     site_url: string,
     click_required: boolean
 }
+export type DbStep = {
+    id: string
+    order: number
+    element: string
+    click_required: boolean
+}
 
 export interface StepData extends Partial<StepOptions> {
     _id: string
@@ -25,8 +31,9 @@ export interface StepData extends Partial<StepOptions> {
     on?: Placement
     buttonText?: string
     audio: string,
-    site_url: string
-
+    site_url: string,
+    click_required: boolean
+    order_index: number
 }
 
 export interface StepData {
