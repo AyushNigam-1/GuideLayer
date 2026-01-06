@@ -14,7 +14,9 @@ export interface Step {
     course_id?: string,
     audio: string,
     site_url: string,
-    click_required: boolean
+    click_required: boolean,
+    input_required: boolean,
+    input: ""
 }
 export type DbStep = {
     id: string

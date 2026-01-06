@@ -1,9 +1,10 @@
 import "lucide-react"
-import { ChevronLeft, Pencil, Play } from "lucide-react";
+import { ChevronLeft, Pencil, Play, Trash2 } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom"
 import Loading from "../components/Loading";
+import { supabase } from "../config/supabase";
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]
@@ -12,6 +13,7 @@ export const config: PlasmoCSConfig = {
 const Course = () => {
     const nav = useNavigate()
     const [isLoading, setLoading] = useState<boolean>(false)
+    const [isDeleting, setDeleting] = useState(false)
     const { state } = useLocation()
     const data = state as { id: number; title: string; description: string; icon: string, baseUrl: string } | null
 
@@ -28,7 +30,7 @@ const Course = () => {
                 courseId: data!.id,
                 baseUrl: data!.baseUrl
             })
-            // window.close() // Optional: close popup immediately after sending message
+            window.close() // Optional: close popup immediately after sending message
         } catch (err) {
             console.error("Direct message failed:", err)
         }
@@ -59,20 +61,54 @@ const Course = () => {
         }
     }
 
+    const handleDelete = async () => {
+        if (!data?.id) return
+        setLoading(true)
+        setDeleting(true) // <--- Changed
+        try {
+            // 2. Perform Delete (Uncomment your actual DB logic below)
+            const { error } = await supabase
+                .from("courses")
+                .delete()
+                .eq("id", data.id)
+
+            if (error) throw error
+            console.log("Deleting course...", data.id)
+            // 3. Navigate back on success
+            nav(-1)
+
+        } catch (err) {
+            console.error("Delete failed:", err)
+            // alert("Failed to delete guide.")
+        } finally {
+            setLoading(false)
+            setDeleting(false) // <--- Changed
+        }
+    }
     // Default to light theme background and text, then explicitly override for dark mode
     return (
         <div className="space-y-4 p-3 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]" >
 
             {/* Header and Back Button */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => nav(-1)}
+                        // Light default (bg-gray-100), Dark override (dark:bg-gray-800)
+                        className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        <ChevronLeft size="16" />
+                    </button>
+                    <h3 className="text-xl font-semibold">Guide Details</h3>
+                </div>
                 <button
-                    onClick={() => nav(-1)}
-                    // Light default (bg-gray-100), Dark override (dark:bg-gray-800)
-                    className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                    className="p-1 rounded-full flex items-center gap-3 hover:bg-gray-200 hover:text-red-400 dark:hover:bg-gray-700 transition-colors"
+                    title="Delete Guide"
                 >
-                    <ChevronLeft size="16" />
+                    {(isLoading && isDeleting) ? <Loading /> : <Trash2 size={18} />}
                 </button>
-                <h3 className="text-xl font-semibold">Guide Details</h3>
             </div>
 
             {/* Course Summary Block */}
@@ -119,7 +155,7 @@ const Course = () => {
                 disabled={isLoading!}
             >
                 {
-                    isLoading ?
+                    (isLoading && !isDeleting) ?
                         <Loading />
                         :
                         <span className="flex items-center gap-2 justify-center">

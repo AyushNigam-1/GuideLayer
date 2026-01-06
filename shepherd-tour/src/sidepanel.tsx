@@ -20,6 +20,7 @@ const SidePanel = () => {
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
     const [courseId, setCourseId] = useState<string>()
     const [isDeleting, setDeleting] = useState<MediaType | null>()
+    // const [isInputRequired, setInputRequired] = useState<boolean>(false)
 
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
@@ -30,7 +31,9 @@ const SidePanel = () => {
         order_index: 0,
         audio: "",
         site_url: "",
-        click_required: false
+        click_required: false,
+        input_required: false,
+        input: ""
     }]);
 
     useEffect(() => {
@@ -89,7 +92,9 @@ const SidePanel = () => {
                     order_index: index,
                     course_id: courseId || "", // temporary
                     site_url: step.site_url,
-                    click_required: step.click_required
+                    click_required: step.click_required,
+                    input_required: step.input_required,
+                    input: step.input
                 }))
                 .filter(step => step.text !== "");
             if (courseId) {
@@ -176,7 +181,9 @@ const SidePanel = () => {
             order_index: steps.length,
             audio: "",
             site_url: "",
-            click_required: false
+            click_required: false,
+            input_required: false,
+            input: ""
         };
         setSteps(prevSteps => [...prevSteps, newStep]);
         setActiveStepIndex(steps.length);
@@ -514,14 +521,22 @@ const SidePanel = () => {
                             <input
                                 type="checkbox"
                                 defaultChecked={false}
-                                checked={activeStep.click_required}
-                                onChange={(e) => updateStep(activeStepIndex, 'click_required', e.target.checked)}
+                                checked={activeStep.input_required}
+                                onChange={(e) => updateStep(activeStepIndex, 'input_required', e.target.checked)}
                                 className="w-4 h-4 accent-indigo-600 rounded border-gray-300 focus:ring-indigo-500 focus:ring-2"
 
                             />
                             <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 ">Input Required</p>
                         </div>
                     </div>
+                    {
+                        activeStep.input_required && <Input
+                            label="Enter Required Text"
+                            value={activeStep.input}
+                            onChange={(e: any) => updateStep(activeStepIndex, 'input', e.target.value)}
+                            placeholder=""
+                        />
+                    }
                     <div>
                         <label htmlFor="step-placement" className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-1">
                             Guide Alignment
