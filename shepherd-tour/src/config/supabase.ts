@@ -6,10 +6,8 @@ const storageAdapter = {
     setItem: (key: string, value: string) => chrome.storage.local.set({ [key]: value }),
     removeItem: (key: string) => chrome.storage.local.remove([key])
 }
-export const supabaseUrl = "https://jyvyidejcnalevvtoxeg.supabase.co"
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dnlpZGVqY25hbGV2dnRveGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNzgzODcsImV4cCI6MjA3ODg1NDM4N30.R4zCOC9jOrAnKibPGhvbmBrZOpuWPBoj_5yQ5Qncm0w"
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(process.env.PLASMO_PUBLIC_SUPABASE_URL!, process.env.PLASMO_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: {
         storage: storageAdapter,
         autoRefreshToken: true,

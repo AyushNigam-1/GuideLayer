@@ -1,141 +1,275 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap");
-
-.shepherd-element {
-    font-family: "Noto Sans", sans-serif !important;
-    padding: 0px;
-    border-radius: 8px !important;
-    position: relative;
-    /* background: #111827 !important; */
-
-    box-shadow: rgba(71, 75, 255, 0.075) 0px 2px 3px !important;
-    z-index: 1000;
+/* 1. Main Box */
+.driver-popover {
+    background-color: #1e1e2e !important;
+    color: #ffffff !important;
+    width: 350px !important;
+    max-width: 90vw !important;
+    border-radius: 16px !important;
+    padding: 15px !important;
+    font-family: 'Inter', sans-serif !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+    box-sizing: border-box !important;
+    transition: opacity 0.3s ease, transform 0.3s ease !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
 }
 
-.t3-theme-dark .t3-card-body {
-    background: #111827 !important;
-    color: white !important;
+.driver-popover-title {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #a6e3a1 !important;
+    margin-bottom: 8px !important;
 }
 
-.t3-theme-light .t3-card-body {
-    background: #dbdde1 !important;
-    color: black;
-
+.driver-popover-description {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: #cdd6f4 !important;
+    margin-bottom: 0 !important;
 }
 
-.shepherd-theme-custom .shepherd-text {
-    padding: 0px;
+/* The class we will add when closing */
+.driver-popover-fade-out {
+    opacity: 0 !important;
+    transform: scale(0.95) !important;
+    /* Subtle shrink effect */
+    pointer-events: none !important;
+    /* Prevent clicks while fading */
 }
 
-.shepherd-theme-custom .shepherd-footer {
-    border-radius: 0px;
+/* 2. FOOTER & WRAPPER LAYOUT (The Fix) */
+.driver-popover-footer {
+    width: 100% !important;
+    margin-top: 24px !important;
+    display: block !important;
+    /* Reset default flex so we can control child */
 }
 
-.t3-card {
-    padding: 15px;
-
+/* 🔥 THIS IS THE KEY FIX: Target the button wrapper directly */
+.driver-popover-navigation-btns {
+    display: flex !important;
+    justify-content: space-between !important;
+    /* Pushes buttons to far left/right */
+    width: 100% !important;
+    gap: 0 !important;
+    /* Remove default gap */
 }
 
-.t3-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.t3-theme-dark .t3-card-title {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 24px;
-    /* margin-bottom: 10px; */
-    color: white;
-}
-
-.t3-theme-light .t3-card-title {
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 24px;
-    /* margin-bottom: 10px; */
-    color: black;
-}
-
-.t3-card-text {
-    color: white;
-    font-size: 12px;
-    font-weight: 300;
-}
-
-.t3-theme-light .t3-card-text {
-    color: black;
-}
-
-.t3-theme-dark .t3-card-text {
-    color: white;
-}
-
-.t3-card-image {
-    color: #5c4033;
-    width: 60px;
-    height: 60px;
-    background-color: navajowhite;
-    border-radius: 50px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-
-.shepherd-theme-custom .shepherd-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 12px;
-}
-
-.shepherd-theme-custom .shepherd-button {
-    all: unset !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+/* 3. SHARED BUTTON STYLES (Round Shape) */
+.driver-popover-footer button {
     width: 44px !important;
     height: 44px !important;
-    background-color: #1f2937 !important;
-    color: white !important;
     border-radius: 50% !important;
-    font-size: 18px !important;
-    font-weight: 500 !important;
+    /* Perfect Circle */
+    padding: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background-color: transparent !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: 20px !important;
+
+    /* Hide Text */
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    text-shadow: none !important;
+
     cursor: pointer !important;
     transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-.shepherd-theme-custom .shepherd-button:hover {
-    color: #5c4033 !important;
-    background-color: white !important;
+/* 4. PREVIOUS BUTTON (Left Arrow) */
+.driver-popover-prev-btn {
+    border: 1px solid #45475a !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 18-6-6 6-6'/%3E%3C/svg%3E") !important;
+    /* Ensure it stays on the left */
+    order: 1 !important;
 }
 
-.shepherd-theme-custom .shepherd-button .shepherd-button-secondary {
-    color: #5c4033 !important;
-    background-color: white !important;
+.driver-popover-prev-btn:hover {
+    background-color: #313244 !important;
+    border-color: #bac2de !important;
 }
 
-/* .t3-theme-light .shepherd-arrow::before {
-    background: #808387 !important;
+/* 5. NEXT BUTTON (Right Arrow) */
+.driver-popover-next-btn {
+    background-color: #89b4fa !important;
+    /* Blue */
+    border: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%231e1e2e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") !important;
+    /* Ensure it stays on the right */
+    order: 2 !important;
 }
 
-.t3-theme-dark .shepherd-arrow::before {
-    background: #111827 !important;
-} */
-
-.close-btn {
-    position: absolute;
-    right: -5px;
-    top: -5px;
-    height: 20px;
-    width: 20px;
-    color: white;
-    background-color: white;
-    border-radius: 100%;
-    padding: 4px;
-    color: #5c4033;
-
+.driver-popover-next-btn:hover {
+    transform: scale(1.05) !important;
+    background-color: #b4befe !important;
 }
 
-.close-btn:hover {
-    cursor: pointer;
+/* 6. DONE BUTTON (Specific Style) */
+.driver-popover-last-step .driver-popover-next-btn {
+    background-color: transparent !important;
+    border: 2px solid #6c7086 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") !important;
+}
+
+.driver-popover-last-step .driver-popover-next-btn:hover {
+    border-color: #a6e3a1 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a6e3a1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") !important;
+}
+
+.driver-popover-arrow {
+    border-width: 10px !important;
+    /* Default is usually 5px or 6px */
+}
+
+.driver-custom-body {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.driver-media-wrapper {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+
+    /* Center the media */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    /* Slight background for transparent images */
+}
+
+.driver-media-element {
+    /* 🔴 CRITICAL: Forces image to fit inside the box */
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 180px !important;
+    /* Prevents it from getting too tall */
+    object-fit: contain !important;
+    display: block !important;
+}
+
+.driver-custom-text {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: #cdd6f4 !important;
+    word-wrap: break-word !important;
+    /* Prevents long text from breaking layout */
+}
+
+/* 10. CLOSE BUTTON (Clean Text '×') */
+.driver-close-btn {
+    /* Positioning */
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    z-index: 1000 !important;
+
+    /* Size & Shape */
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+
+    /* Reset & Flex for Perfect Centering */
+    background-color: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    /* Text Styling for the '×' */
+    color: #cdd6f4 !important;
+    /* Same light gray as text */
+    font-family: 'Inter', sans-serif !important;
+    /* Ensure consistent font */
+    font-size: 26px !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+    /* Crucial for vertical alignment */
+    padding-bottom: 2px !important;
+    /* Slight visual adjustment */
+
+    /* Default state */
+    opacity: 0.7 !important;
+    transition: all 0.2s ease !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.driver-close-btn:focus,
+.driver-close-btn:focus-visible,
+.driver-close-btn:active {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.driver-popover-next-btn.driver-btn-disabled {
+    /* 1. Make the background visible but dark */
+    background-color: #313244 !important;
+    border: 1px solid #585b70 !important;
+    /* Brighter border to ensure visibility */
+
+    /* 2. CRITICAL: Switch to a WHITE icon so it shows up on dark background */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23bac2de' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") !important;
+
+    /* 3. Styling adjustments */
+    opacity: 1 !important;
+    /* Keep opacity high so we can see the border */
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Hover Effect */
+.driver-close-btn:hover {
+    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    /* Turns bright white */
+}
+
+.driver-popover-first-step .driver-popover-footer {
+    display: none !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+}
+
+.driver-popover-first-step .driver-popover-prev-btn {
+    display: none !important;
+}
+
+/* 7. ARROWS */
+.driver-popover-arrow-side-left.driver-popover-arrow {
+    border-left-color: #1e1e2e !important;
+    margin-right: -10px !important;
+}
+
+.driver-popover-arrow-side-right.driver-popover-arrow {
+    border-right-color: #1e1e2e !important;
+    margin-left: -10px !important;
+}
+
+.driver-popover-arrow-side-top.driver-popover-arrow {
+    border-top-color: #1e1e2e !important;
+    margin-bottom: -10px !important;
+}
+
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+    border-bottom-color: #1e1e2e !important;
+    margin-top: -10px !important;
 }

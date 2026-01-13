@@ -3,69 +3,13 @@ import "driver.js/dist/driver.css"
 import type { PlasmoCSConfig } from "plasmo"
 import { supabase } from "../config/supabase"
 import { Step } from "../types"
+import "../../css/pro-theme.css"
 
 // 1. PLASMO CONFIG
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"],
     run_at: "document_idle" // Wait for page to be ready
 }
-const injectCustomStyles = () => {
-    const style = document.createElement('style')
-    style.textContent = `
-    /* 1. The Main Box */
-    .driver-popover {
-      background-color: #1e1e2e !important; /* Dark mode bg */
-      color: #ffffff !important;
-      border-radius: 12px !important;
-      padding: 15px !important;
-      font-family: 'Inter', sans-serif !important;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-    }
-
-    /* 2. Title & Description */
-    .driver-popover-title {
-      font-size: 18px !important;
-      font-weight: 700 !important;
-      color: #a6e3a1 !important; /* Green accent */
-    }
-    
-    .driver-popover-description {
-      font-size: 14px !important;
-      line-height: 1.6 !important;
-      color: #cdd6f4 !important;
-    }
-
-    /* 3. The Buttons */
-    .driver-popover-footer button {
-      border-radius: 6px !important;
-      padding: 8px 16px !important;
-      font-size: 12px !important;
-      text-transform: uppercase !important;
-      font-weight: bold !important;
-    }
-
-    /* Next / Done Button */
-    .driver-popover-next-btn {
-      background-color: #89b4fa !important; /* Blue */
-      color: #1e1e2e !important;
-      border: none !important;
-      text-shadow: none !important;
-    }
-    
-    /* Previous Button */
-    .driver-popover-prev-btn {
-      background-color: transparent !important;
-      border: 1px solid #45475a !important;
-      color: #bac2de !important;
-    }
-    
-    .driver-popover-prev-btn:hover {
-      background-color: #313244 !important;
-    }
-  `
-    document.head.appendChild(style)
-}
-injectCustomStyles()
 
 
 interface TourState {
@@ -96,6 +40,55 @@ const clearTourState = () => {
     localStorage.removeItem(STORAGE_KEY)
 }
 
+const html = (text: string, filename?: string): string => {
+    const BASE_URL = 'https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images';
+    let mediaHtml = '';
+
+    if (filename) {
+        const mediaUrl = `${BASE_URL}/${filename}`;
+        const isVideo = /\.(mp4|mov|webm|ogg)$/i.test(filename);
+        if (isVideo) {
+            mediaHtml = `
+                <div class="driver-media-wrapper">
+                    <video controls class="driver-media-element">
+                        <source src="${mediaUrl}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            `;
+        } else {
+            mediaHtml = `
+                <div class="driver-media-wrapper">
+                    <img src="${mediaUrl}" alt="Step Media" class="driver-media-element" />
+                </div>
+            `;
+        }
+    }
+
+    return `
+        <div class="driver-custom-body">
+            <button class="driver-close-btn" aria-label="Close tour">×</button>
+            ${mediaHtml}
+            <div class="driver-custom-text">
+                ${text}
+            </div>
+        </div>
+    `;
+};
+
+const closeTourWithAnimation = () => {
+    const popover = document.querySelector(".driver-popover");
+    if (popover) {
+        popover.classList.add("driver-popover-fade-out");
+        setTimeout(() => {
+            driverObj?.destroy();
+            clearTourState();
+        }, 300);
+    } else {
+        driverObj?.destroy();
+        clearTourState();
+    }
+}
 // 4. UTILITY: WAIT FOR ELEMENT
 // This waits for the element to actually exist in the DOM before showing the step
 const waitForElement = (selector: string, timeout = 10000): Promise<Element> => {
@@ -131,31 +124,40 @@ const startOrResumeTour = async (
 ) => {
 
     const driverSteps: DriveStep[] = steps.map((step, index) => {
+        const isFirstStep = index === 0
         const isLastStep = index === steps.length - 1
         const isActionRequired = step.click_required || step.input_required
+        const classList = []
+
+        // ✅ FIX: Explicitly define the type here
+        let visibleButtons: ("next" | "previous" | "close")[] = ["next", "previous"]
+        if (isFirstStep) {
+            visibleButtons = ["next"]
+            classList.push("driver-popover-first-step")
+        }
+
+
+        if (isLastStep) classList.push("driver-popover-last-step")
+        if (isActionRequired) classList.push("driver-step-action-required")
         return {
             element: step.element,
             popover: {
                 title: `Step ${step.order_index + 1}`,
-                description: `
-                    <div class="my-custom-body">
-                    <p>${step.text}</p>
-                    </div>
-                `,
+                description: html(step.text, step.file), // Ensure you use your helper name here
                 side: step.on || "bottom",
                 align: 'start',
-
+                popoverClass: classList.join(" "),
                 doneBtnText: isLastStep ? "Done" : "Next",
 
-                showButtons: isActionRequired ? ["previous"] : ["next", "previous"],
+                // Now this matches the expected type
+                showButtons: visibleButtons,
                 onNextClick: isLastStep
                     ? () => {
                         console.log("Force closing tour...")
                         driverObj?.destroy()
-                        // Double safety: clear state immediately
-                        clearTourState()
+                        closeTourWithAnimation()
                     }
-                    : () => driverObj?.moveNext() // Default behavior for other steps
+                    : () => driverObj?.moveNext()
             },
 
             // ... your existing onHighlightStarted hook ...
@@ -177,21 +179,46 @@ const startOrResumeTour = async (
 
     // Initialize Driver
     driverObj = driver({
-        showProgress: true,
+        showProgress: false,
         animate: true,
-        // isableActiveInteraction: false,
         disableActiveInteraction: false,
-        // 2. Prevent the tour from closing if they click the background (since they will be clicking it now!)
         allowClose: false,
-        steps: driverSteps,
-        // allowClose: true,
+        steps: driverSteps, // Your mapped steps
+
+        // 👇 THIS IS THE CRITICAL PART YOU ARE MISSING
+        onPopoverRender: (popover) => {
+
+            // 1. Logic for the Close (Cross) Button
+            const closeBtn = document.querySelector(".driver-close-btn");
+            if (closeBtn) {
+                closeBtn.addEventListener("click", closeTourWithAnimation);
+            }
+
+            // 2. Logic for Disabling the Next Button
+            // We check if the current step wrapper has the "action-required" class
+            const wrapper = popover.wrapper;
+            const isActionStep = wrapper.classList.contains("driver-step-action-required");
+
+            if (isActionStep) {
+                console.log("Action required: Disabling Next button..."); // Debug log
+
+                const nextBtn = document.querySelector(".driver-popover-next-btn");
+                if (nextBtn) {
+                    // Manually ADD the class that your CSS is looking for
+                    nextBtn.classList.add("driver-btn-disabled");
+
+                    // Also set the HTML attribute for good measure
+                    nextBtn.setAttribute("disabled", "true");
+                }
+            }
+        },
+
         onDestroyStarted: () => {
+            // ... your existing cleanup logic ...
             const state = getTourState()
             if (!state?.isPendingResume) {
                 console.log("Tour ended by user.")
                 clearTourState()
-
-                // BRUTE FORCE CLEANUP: Manually remove the overlay if Driver.js misses it
                 setTimeout(() => {
                     const overlay = document.getElementById("driver-page-overlay");
                     if (overlay) overlay.remove();

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import { Auth } from "@supabase/auth-ui-react"
 import { ThemeSupa } from "@supabase/auth-ui-shared"
-import { supabase, supabaseUrl } from "../config/supabase"
+import { supabase, } from "../config/supabase"
 import { Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-// import (useNavigation)
+
 export default function Popup() {
     const nav = useNavigate()
     // const [session, setSession] = useState<any>(null)
@@ -14,7 +14,7 @@ export default function Popup() {
     async function signInWithGoogle() {
         setLoading(true)
         const authUrl =
-            `${supabaseUrl}/auth/v1/authorize?provider=google`
+            `${process.env.PLASMO_PUBLIC_SUPABASE_URL}/auth/v1/authorize?provider=google`
         chrome.identity.launchWebAuthFlow(
             {
                 url: authUrl,

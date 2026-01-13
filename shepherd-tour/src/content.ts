@@ -136,42 +136,7 @@
 //     }
 // }
 
-// const popupHtml = (text: string, filename?: string): string => {
-//     const BASE_URL = 'https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images';
-//     let mediaHtml = '';
-//     const themeClass = theme === 'light' ? 't3-theme-light' : 't3-theme-dark';
 
-//     if (filename) {
-//         const mediaUrl = `${BASE_URL}/${filename}`;
-//         const isVideo = /\.(mp4|mov|webm|ogg)$/i.test(filename);
-//         if (isVideo) {
-//             mediaHtml = `
-//                 <video controls class="t3-media-element">
-//                     <source src="${mediaUrl}" type="video/mp4">
-//                     Your browser does not support the video tag.
-//                 </video>
-//             `;
-//         } else {
-//             mediaHtml = `
-//                 <img src="${mediaUrl}" alt="Media content" class="t3-media-element">
-//             `;
-//         }
-//     }
-
-//     return `
-//         <div class="t3-card ${themeClass}">
-//             <div class="t3-card-body">
-//                 ${mediaHtml}
-//                 <div class="t3-card-title">
-//                     A Comprehensive Guide to Modern Web Development
-//                 </div>
-//                 <div class="t3-card-text">
-//                     ${text}
-//                 </div>
-//             </div>
-//         </div>
-//     `;
-// };
 
 // const handleStartTour = async (courseId: string, sendResponse: SendResponse) => {
 //     try {
