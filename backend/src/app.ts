@@ -10,7 +10,7 @@ app.use(express.json());
 
 // put all routes under /api
 app.use("/api", llmRoutes);
-app.use("/api/vector", vectorRoutes);
+app.use("/api", vectorRoutes);
 
 // error handling
 app.use(errorHandler);

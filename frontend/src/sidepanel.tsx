@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare, Save } from "lucide-react"
 import "./index.css"
+import { v4 as uuidv4 } from "uuid";
 // Assuming types.ts defines MediaType and Step
 import { MediaType, Step, ThemeValue } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
 import Loading from "./components/Loading"
 import FileUpload from "./components/FileUpload"
+import { embedCourseSteps, updateVectorStore } from "./api/vector"
 
 // interface Metadata { id: string, title: string, description: string }
 
@@ -80,28 +82,41 @@ const SidePanel = () => {
             return;
         }
         setLoading(true);
+
         try {
-            const cleanSteps = steps
+
+            const stepsWithIds = steps
                 .map((step, index) => ({
-                    _id: step._id,
                     text: step.text.trim(),
                     file: step.file || "",
                     element: step.element || "",
                     audio: step.audio || "",
                     on: step.on || "right",
                     order_index: index,
-                    course_id: courseId || "", // temporary
                     site_url: step.site_url,
                     click_required: step.click_required,
                     input_required: step.input_required,
-                    input: step.input
+                    input: step.input,
+                    vector_id: uuidv4()
                 }))
                 .filter(step => step.text !== "");
-            if (courseId) {
-                // UPDATE MODE — course already exists
-                console.log("Updating existing course:", courseId);
 
-                // Update course metadata
+            let activeCourseId = courseId;
+            let oldVectorIdsToDelete: string[] = [];
+
+            if (courseId) {
+                console.log("Updating existing course:", courseId);
+                const { data: oldSteps } = await supabase
+                    .from("steps")
+                    .select("vector_id")
+                    .eq("course_id", courseId);
+
+                if (oldSteps) {
+                    oldVectorIdsToDelete = oldSteps
+                        .map(s => s.vector_id)
+                        .filter((id): id is string => !!id);
+                }
+
                 const { error: courseError } = await supabase
                     .from("courses")
                     .update({
@@ -114,24 +129,19 @@ const SidePanel = () => {
 
                 if (courseError) throw courseError;
 
-                // Delete old steps
                 await supabase.from("steps").delete().eq("course_id", courseId);
 
-                // Insert new steps
-                const stepsToInsert = cleanSteps.map(step => ({
+                const stepsToInsert = stepsWithIds.map(step => ({
                     ...step,
                     course_id: courseId,
                 }));
 
-                const { error } = await supabase
-                    .from("steps")
-                    .insert(stepsToInsert)
-
+                const { error } = await supabase.from("steps").insert(stepsToInsert);
                 if (error) throw error;
 
                 alert("Course updated successfully!");
+
             } else {
-                // CREATE MODE — same as your old function
                 console.log("Creating new course");
 
                 const { data: courseData, error: courseError } = await supabase
@@ -148,20 +158,37 @@ const SidePanel = () => {
 
                 if (courseError) throw courseError;
 
-                const stepsToInsert = cleanSteps.map(step => ({
+                activeCourseId = courseData.id;
+
+                const stepsToInsert = stepsWithIds.map(step => ({
                     ...step,
-                    course_id: courseData.id,
+                    course_id: activeCourseId,
                 }));
 
-                const { error: stepsError } = await supabase
-                    .from("steps")
-                    .insert(stepsToInsert);
-
+                const { error: stepsError } = await supabase.from("steps").insert(stepsToInsert);
                 if (stepsError) throw stepsError;
 
-                setCourseId(courseData.id);
+                setCourseId(activeCourseId);
                 alert("Course created successfully!");
             }
+
+            console.log("Syncing AI Memory...");
+
+            const newVectorDocs = stepsWithIds.map(step => ({
+                id: step.vector_id, // Send the UUID we just saved to Supabase
+                text: `Course: ${metadata.title}. Step: ${step.text}`, // Context-rich text
+                metadata: {
+                    courseId: activeCourseId,
+                    url: step.site_url,
+                    element: step.element,
+                    actionType: step.click_required ? "click" : step.input_required ? "input" : "wait"
+                }
+            }));
+
+            await updateVectorStore(oldVectorIdsToDelete, newVectorDocs);
+
+            console.log("AI Sync Complete.");
+
         } catch (error: any) {
             console.error("Save failed:", error);
             alert("Failed to save: " + error.message);

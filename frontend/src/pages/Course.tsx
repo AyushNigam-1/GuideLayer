@@ -30,7 +30,7 @@ const Course = () => {
                 courseId: data!.id,
                 baseUrl: data!.baseUrl
             })
-            window.close() // Optional: close popup immediately after sending message
+            window.close()
         } catch (err) {
             console.error("Direct message failed:", err)
         }
@@ -48,7 +48,6 @@ const Course = () => {
             if (!tab?.id) {
                 return
             }
-            // Save course details to session storage so the side panel can load it
             await chrome.storage.session.set({
                 sidebarProps: data
             });
@@ -64,9 +63,8 @@ const Course = () => {
     const handleDelete = async () => {
         if (!data?.id) return
         setLoading(true)
-        setDeleting(true) // <--- Changed
+        setDeleting(true)
         try {
-            // 2. Perform Delete (Uncomment your actual DB logic below)
             const { error } = await supabase
                 .from("courses")
                 .delete()
@@ -74,27 +72,25 @@ const Course = () => {
 
             if (error) throw error
             console.log("Deleting course...", data.id)
-            // 3. Navigate back on success
             nav(-1)
 
         } catch (err) {
             console.error("Delete failed:", err)
-            // alert("Failed to delete guide.")
         } finally {
             setLoading(false)
-            setDeleting(false) // <--- Changed
+            setDeleting(false)
         }
     }
-    // Default to light theme background and text, then explicitly override for dark mode
-    return (
-        <div className="space-y-4 p-3 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]" >
 
-            {/* Header and Back Button */}
-            <div className="flex items-center justify-between">
+    return (
+        // LAYOUT CHANGE 1: 'flex flex-col' enables vertical stacking, 'h-[500px]' fixes height
+        <div className="flex flex-col h-[500px] p-3 gap-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]" >
+
+            {/* Header and Back Button (Static flex item) */}
+            <div className="flex-none flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => nav(-1)}
-                        // Light default (bg-gray-100), Dark override (dark:bg-gray-800)
                         className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                     >
                         <ChevronLeft size="16" />
@@ -111,16 +107,14 @@ const Course = () => {
                 </button>
             </div>
 
-            {/* Course Summary Block */}
-            <div className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            {/* Course Summary Block (Static flex item) */}
+            <div className="flex-none flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center gap-3">
-                    {/* Course Icon */}
                     <img
                         src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${data?.icon}`}
                         alt=""
                         className="w-10 rounded-md"
                     />
-                    {/* Title and Author */}
                     <div className="text-left">
                         <h3 className="text-lg font-bold">
                             {data?.title}
@@ -132,37 +126,46 @@ const Course = () => {
                 </div>
             </div>
 
-            {/* Description */}
-            <h4 className="text-sm text-gray-700 dark:text-gray-300 p-1">
-                {data?.description}
-            </h4>
+            {/* LAYOUT CHANGE 2: Description Area 
+               - flex-1: Takes up all remaining space
+               - overflow-y-auto: Scrolls if content is too long
+               - min-h-0: Prevents flex container blowout
+            */}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+                <h4 className="text-sm text-gray-700 dark:text-gray-300 p-1 whitespace-pre-wrap">
+                    {data?.description}
+                </h4>
+            </div>
 
-            {/* Edit Guide Button */}
-            <button
-                onClick={handleUpdate}
-                className="w-full py-2 flex items-center gap-2 justify-center bg-indigo-500 text-white rounded-lg font-semibold shadow-md hover:bg-indigo-600 transition-colors"
-            >
-                <span className="flex items-center gap-2 justify-center">
-                    <Pencil size={16} />
-                    Edit Guide
-                </span>
-            </button>
+            {/* LAYOUT CHANGE 3: Footer Buttons (Static at bottom) */}
+            <div className="flex-none flex flex-col gap-3 pt-2">
+                {/* Edit Guide Button */}
+                <button
+                    onClick={handleUpdate}
+                    className="w-full py-2 flex items-center gap-2 justify-center bg-indigo-500 text-white rounded-lg font-semibold shadow-md hover:bg-indigo-600 transition-colors"
+                >
+                    <span className="flex items-center gap-2 justify-center">
+                        <Pencil size={16} />
+                        Edit Guide
+                    </span>
+                </button>
 
-            {/* Start Guide Button */}
-            <button
-                onClick={handleStartTour}
-                className="w-full py-2 bg-green-600 text-white rounded-lg font-semibold shadow-md hover:bg-green-700 transition-colors"
-                disabled={isLoading!}
-            >
-                {
-                    (isLoading && !isDeleting) ?
-                        <Loading />
-                        :
-                        <span className="flex items-center gap-2 justify-center">
-                            <Play size={16} />
-                            Start Guide
-                        </span>}
-            </button>
+                {/* Start Guide Button */}
+                <button
+                    onClick={handleStartTour}
+                    className="w-full py-2 bg-green-600 text-white rounded-lg font-semibold shadow-md hover:bg-green-700 transition-colors"
+                    disabled={isLoading!}
+                >
+                    {
+                        (isLoading && !isDeleting) ?
+                            <Loading />
+                            :
+                            <span className="flex items-center gap-2 justify-center">
+                                <Play size={16} />
+                                Start Guide
+                            </span>}
+                </button>
+            </div>
         </div>
     )
 }

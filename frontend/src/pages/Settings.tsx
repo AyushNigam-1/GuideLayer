@@ -146,17 +146,27 @@ export default function Settings() {
 
     return (
         // Main container sets the default light theme and dark variant overrides
-        <div className="p-3 space-y-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
-            <div className="flex items-center gap-2">
+        <div className="p-3 space-y-3 h-[500px]  bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
+
+            <div className="flex items-center justify-between text-gray-900 dark:text-white ">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => nav(-1)}
+                        // Button styling: Light default, Dark overrides
+                        className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        <ChevronLeft size="16" />
+                    </button>
+                    <h3 className="text-xl font-semibold">Settings</h3>
+                </div>
                 <button
-                    onClick={() => nav(-1)}
-                    // Button styling: Light default, Dark overrides
-                    className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    className="rounded-full flex items-center gap-3 font-semibold transition-colors text-red-500"
+                    onClick={handleLogout}
                 >
-                    <ChevronLeft size="16" />
+                    <LogOut size="16" />
                 </button>
-                <h3 className="text-xl font-semibold">Profile & Settings</h3>
             </div>
+
 
             {/* User Profile */}
             <div
@@ -176,10 +186,10 @@ export default function Settings() {
             </div>
 
             <div
-                className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700"
+                className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700"
             >
                 <div className="mb-2">
-                    <p className="font-medium text-lg">Extension UI Theme</p>
+                    <p className="font-medium text-lg">Extension Theme</p>
                     <p className="text-gray-500 text-sm dark:text-gray-400">Changes extension popup appearance</p>
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -190,11 +200,11 @@ export default function Settings() {
             </div>
 
             <div
-                className="flex flex-col rounded-xl gap-2 p-3 bg-gray-100 dark:bg-gray-800/50  dark:border-gray-700"
+                className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50  dark:border-gray-700"
             >
                 <div className="mb-2">
-                    <p className="font-medium text-lg">Guide UI Theme</p>
-                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes guide popup appearance</p>
+                    <p className="font-medium text-lg">Guide Theme</p>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes guides popups appearance</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button Icon={Sun} label="light" active={uiTheme} onClick={handleSetUiTheme} />
@@ -207,16 +217,16 @@ export default function Settings() {
             {/* <div className="h-0.5 w-full bg-gray-200 dark:bg-white/5" /> */}
 
             {/* Logout */}
-            <div>
+            {/* <div>
                 <button
-                    onClick={handleLogout}
+                    
                     // Retains solid red for both themes, uses white text
                     className="w-full py-3 text-red-600 hover:bg-red-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-all bg-white/5 text-base"
                 >
                     <LogOut className="size-4" />
                     Logout
                 </button>
-            </div>
+            </div> */}
         </div>
     )
 }

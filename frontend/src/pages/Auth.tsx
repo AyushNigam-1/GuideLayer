@@ -36,10 +36,10 @@ export default function SupabaseAuth() {
     }
 
     return (
-        <div className="w-80 bg-white dark:bg-gray-900 text-gray-900 dark:text-white min-h-96 flex flex-col p-3">
+        <div className=" bg-white dark:bg-gray-900 text-gray-900 dark:text-white h-[500px] flex flex-col p-3">
 
             <div className="p-6 text-center border-b border-gray-200 dark:border-gray-800">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gray-100">
                     GuideLayer
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
@@ -47,8 +47,8 @@ export default function SupabaseAuth() {
                 </p>
             </div>
 
-            <div className="flex-1 space-y-2">
 
+            <div className="flex-1 space-y-2">
                 <button
                     onClick={signInWithGoogle}
                     className="w-full flex items-center justify-center py-3 text-sm font-medium rounded-lg transition-all 
@@ -57,13 +57,11 @@ export default function SupabaseAuth() {
                 >
                     Sign in with Google
                 </button>
-
                 <div className="flex items-center">
                     <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
                     <span className="flex-shrink mx-4 text-gray-500 dark:text-gray-400 text-xs">OR</span>
                     <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
                 </div>
-
                 <Auth
                     supabaseClient={supabase}
                     appearance={{

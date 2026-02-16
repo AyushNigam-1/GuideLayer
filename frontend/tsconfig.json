@@ -21,7 +21,8 @@
   },
   "include": [
     ".plasmo/index.d.ts",
-    "src/**/*"
+    "src/**/*",
+    "types.d.ts" // <--- ADD THIS LINE HERE
   ],
   "exclude": [
     "node_modules"
