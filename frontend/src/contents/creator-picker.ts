@@ -70,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
 })
 chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
     if (msg.action === "STOP_ELEMENT_PICKER") {
-        startPicker()
+        stopPicker()
         sendResponse({ ok: true })
         return true
     }

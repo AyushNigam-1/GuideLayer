@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
-import { Wand2, X, Plus, Trash2, CheckSquare, Save } from "lucide-react"
+import { Wand2, X, Plus, Trash2, CheckSquare, Save, Loader2, CheckCircle2 } from "lucide-react"
 import "./index.css"
-import { v4 as uuidv4 } from "uuid";
-// Assuming types.ts defines MediaType and Step
 import { MediaType, Step, ThemeValue } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
 import Loading from "./components/Loading"
 import FileUpload from "./components/FileUpload"
-import { embedCourseSteps, updateVectorStore } from "./api/vector"
-
-// interface Metadata { id: string, title: string, description: string }
+import { authClient } from "./lib/auth-client"
 
 const SidePanel = () => {
-    // --- Application State Management ---
     const [isPicking, setIsPicking] = useState(false)
     const [isLoading, setLoading] = useState(false)
+    const [isSuccess, setIsSuccess] = useState(false);
     const [isUploading, setIsUploading] = useState<MediaType | null>(); // New state for image upload status
     const [userId, setUserId] = useState("")
     const [metadata, setMetadata] = useState<{ title: string, description: string, baseUrl: string, icon: string }>({ title: "", description: "", baseUrl: "", icon: "" })
@@ -69,11 +65,20 @@ const SidePanel = () => {
     }
 
     useEffect(() => {
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            console.log("session", session)
-            setUserId(session?.user?.id!)
-        })()
+        const fetchUser = async () => {
+            try {
+                const { data, error } = await authClient.getSession()
+                if (data?.user) {
+                    console.log("session", data)
+                    setUserId(data.user.id)
+                } else if (error) {
+                    console.error("Session error:", error)
+                }
+            } catch (err) {
+                console.error("Failed to fetch session:", err)
+            }
+        }
+        fetchUser()
     }, [])
 
     const handleSaveCourse = async () => {
@@ -84,7 +89,6 @@ const SidePanel = () => {
         setLoading(true);
 
         try {
-
             const stepsWithIds = steps
                 .map((step, index) => ({
                     text: step.text.trim(),
@@ -96,27 +100,17 @@ const SidePanel = () => {
                     site_url: step.site_url,
                     click_required: step.click_required,
                     input_required: step.input_required,
-                    input: step.input,
-                    vector_id: uuidv4()
+                    input: step.input
+                    // Removed vector_id generation
                 }))
                 .filter(step => step.text !== "");
 
             let activeCourseId = courseId;
-            let oldVectorIdsToDelete: string[] = [];
 
             if (courseId) {
                 console.log("Updating existing course:", courseId);
-                const { data: oldSteps } = await supabase
-                    .from("steps")
-                    .select("vector_id")
-                    .eq("course_id", courseId);
 
-                if (oldSteps) {
-                    oldVectorIdsToDelete = oldSteps
-                        .map(s => s.vector_id)
-                        .filter((id): id is string => !!id);
-                }
-
+                // Update course metadata
                 const { error: courseError } = await supabase
                     .from("courses")
                     .update({
@@ -129,6 +123,7 @@ const SidePanel = () => {
 
                 if (courseError) throw courseError;
 
+                // Delete old steps and insert new ones
                 await supabase.from("steps").delete().eq("course_id", courseId);
 
                 const stepsToInsert = stepsWithIds.map(step => ({
@@ -139,11 +134,12 @@ const SidePanel = () => {
                 const { error } = await supabase.from("steps").insert(stepsToInsert);
                 if (error) throw error;
 
-                alert("Course updated successfully!");
+                setIsSuccess(true);
 
             } else {
                 console.log("Creating new course");
 
+                // Insert new course metadata
                 const { data: courseData, error: courseError } = await supabase
                     .from("courses")
                     .insert({
@@ -160,6 +156,7 @@ const SidePanel = () => {
 
                 activeCourseId = courseData.id;
 
+                // Insert steps mapped to the new course
                 const stepsToInsert = stepsWithIds.map(step => ({
                     ...step,
                     course_id: activeCourseId,
@@ -169,25 +166,8 @@ const SidePanel = () => {
                 if (stepsError) throw stepsError;
 
                 setCourseId(activeCourseId);
-                alert("Course created successfully!");
+                setIsSuccess(true); // Replaced alert
             }
-
-            console.log("Syncing AI Memory...");
-
-            const newVectorDocs = stepsWithIds.map(step => ({
-                id: step.vector_id, // Send the UUID we just saved to Supabase
-                text: `Course: ${metadata.title}. Step: ${step.text}`, // Context-rich text
-                metadata: {
-                    courseId: activeCourseId,
-                    url: step.site_url,
-                    element: step.element,
-                    actionType: step.click_required ? "click" : step.input_required ? "input" : "wait"
-                }
-            }));
-
-            await updateVectorStore(oldVectorIdsToDelete, newVectorDocs);
-
-            console.log("AI Sync Complete.");
 
         } catch (error: any) {
             console.error("Save failed:", error);
@@ -268,45 +248,32 @@ const SidePanel = () => {
         return () => chrome.runtime.onMessage.removeListener(listener);
     }, [handleElementSelection]);
 
-    // Function to trigger element picking (Mocked)
     const startElementPicker = async () => {
         if (activeStepIndex === null) {
             alert("Please select a step to assign an element.");
             return;
         }
         setIsPicking(true);
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]?.id) return
-            chrome.tabs.sendMessage(
-                tabs[0].id!,
-                { action: "START_ELEMENT_PICKER" },
-                () => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Error:", chrome.runtime.lastError.message)
-                    } else {
-                        console.log("Picker started")
-                    }
+
+        chrome.tabs.query({ active: true }, (tabs) => {
+            tabs.forEach(tab => {
+                if (tab.id) {
+                    chrome.tabs.sendMessage(tab.id, { action: "START_ELEMENT_PICKER" }, () => chrome.runtime.lastError);
                 }
-            )
-        })
+            });
+        });
     };
 
     const handleAbortPicking = async () => {
         setIsPicking(false);
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]?.id) return
-            chrome.tabs.sendMessage(
-                tabs[0].id!,
-                { action: "STOP_ELEMENT_PICKER" },
-                () => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Error:", chrome.runtime.lastError.message)
-                    } else {
-                        console.log("Picker Stopped")
-                    }
+
+        chrome.tabs.query({ active: true }, (tabs) => {
+            tabs.forEach(tab => {
+                if (tab.id) {
+                    chrome.tabs.sendMessage(tab.id, { action: "STOP_ELEMENT_PICKER" }, () => chrome.runtime.lastError);
                 }
-            )
-        })
+            });
+        });
     };
 
     const handleDeleteFile = async (folderPath: string, type: MediaType) => {
@@ -419,7 +386,49 @@ const SidePanel = () => {
             chrome.storage.onChanged.removeListener(handleStorageChange);
         };
     }, [])
+    if (isSuccess) {
+        return (
+            <div className="p-4 flex flex-col h-screen bg-white dark:bg-gray-900 font-mono items-center justify-center text-center">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                    Guide Saved!
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm px-2">
+                    Your guide has been successfully {courseId ? "updated" : "created"}. You can now close this panel and view it in your main extension menu.
+                </p>
 
+                <div className="w-full space-y-3 mt-10">
+                    <button
+                        onClick={async () => {
+                            try {
+                                if (chrome.action && chrome.action.openPopup) {
+                                    await chrome.action.openPopup();
+                                } else {
+                                    console.warn("Please update your Chrome browser to support auto-opening popups.");
+                                }
+                            } catch (error) {
+                                console.error("Could not open popup:", error);
+                            } finally {
+                                window.close();
+                            }
+                        }}
+                        className="w-full py-3 flex items-center justify-center gap-2 bg-indigo-500 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-600 transition-colors"
+                    >
+                        <CheckCircle2 size={16} />
+                        Close Panel & Open App
+                    </button>
+                    <button
+                        onClick={() => setIsSuccess(false)}
+                        className="w-full py-3 bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                    >
+                        Continue Editing
+                    </button>
+                </div>
+            </div>
+        )
+    }
     return (
         <div className="p-4 flex flex-col h-full bg-white  dark:bg-gray-900 dark:text-white font-mono space-y-6">
             <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300"> {courseId ? "Update" : "New"} Guide</h3>
@@ -566,7 +575,7 @@ const SidePanel = () => {
                     }
                     <div>
                         <label htmlFor="step-placement" className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-1">
-                            Guide Alignment
+                            Guide Position
                         </label>
                         <select
                             id="step-placement"
@@ -585,29 +594,27 @@ const SidePanel = () => {
                 </div>
             )}
 
-            {/* Footer / Save Button */}
             <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-700 space-y-4">
                 <button
                     onClick={addStep}
-                    className=" w-full text-sm py-2 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
+                    className="w-full py-2 text-sm flex items-center gap-2 justify-center  bg-indigo-500 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus size={15} />
                     New Step
                 </button>
                 <button
                     onClick={handleSaveCourse}
-                    className="w-full py-2 text-sm bg-indigo-500 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={steps.length === 0}
+                    className="w-full py-2 text-sm flex items-center justify-center bg-indigo-500 text-white rounded-lg font-semibold shadow-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={steps.length === 0 || isLoading}
                 >
-                    {
-                        isLoading ?
-                            <Loading />
-                            :
-                            <span className="flex items-center gap-2 justify-center ">
-                                <Save size={16} />
-                                {courseId ? "Update" : "Save"} Guide
-                            </span>
-                    }
+                    {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    ) : (
+                        <span className="flex items-center gap-2 justify-center">
+                            <Save size={16} />
+                            {courseId ? "Update" : "Save"} Guide
+                        </span>
+                    )}
                 </button>
             </div >
         </div >

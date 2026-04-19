@@ -11,11 +11,11 @@ const Input = ({ label, value, onChange, isTextArea, placeholder, disabled = fal
         bg-gray-200 text-gray-900 placeholder-gray-500
         
         /* Dark Mode Overrides */
-        dark:bg-gray-700 dark:text-white  dark:placeholder-gray-400
+        dark:bg-white/5 dark:text-white  dark:placeholder-gray-400
         
         /* Disabled State */
         disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:opacity-70 disabled:cursor-not-allowed
-    `.replace(/\s+/g, ' ').trim(); // Clean up class names
+    `.replace(/\s+/g, ' ').trim();
 
     return (
         <div>

@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom"
 import { ThemeValue } from "./types"
 
 const Layout = () => {
-    // type ThemeValue = "light" | "dark" | "system"
 
     const applyTheme = (theme: ThemeValue) => {
         const root = document.documentElement
@@ -25,7 +24,7 @@ const Layout = () => {
     }, [])
     return (
         <div
-            className="min-w-[320px] dark:text-gray-900 bg-slate-900 text-white shadow-xl border-0 rounded-xl overflow-hidden font-mono"
+            className="min-w-[320px] dark:text-gray-900 bg-slate-900 text-white shadow-xl border-0 overflow-hidden font-mono"
         >
             <Outlet />
         </div>

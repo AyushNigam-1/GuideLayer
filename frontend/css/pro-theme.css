@@ -273,3 +273,19 @@
     border-bottom-color: #1e1e2e !important;
     margin-top: -10px !important;
 }
+
+.driver-popover {
+    background-color: #ffffff;
+    color: #111827;
+}
+
+/* DARK MODE */
+body.guidelayer-theme-dark .driver-popover {
+    background-color: #111827;
+    color: #ffffff;
+}
+
+body.guidelayer-theme-dark .driver-popover-next-btn {
+    background-color: #4f46e5;
+    color: white;
+}

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { Search, Plus, Settings } from "lucide-react"
+import { Search, Plus, Settings, Loader2, Map } from "lucide-react"
 import { motion } from "framer-motion"
 import type { PlasmoCSConfig } from "plasmo"
 import '../index.css'
 import { supabase } from "../config/supabase"
 import { useNavigate } from "react-router-dom"
-import Loading from "../components/Loading"
-import type { Course } from "../types" // Assuming types are exported here
+import type { Course } from "../types"
+import { authClient } from "../lib/auth-client"
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]
@@ -15,7 +15,7 @@ export const config: PlasmoCSConfig = {
 export default function Popup() {
     const navigate = useNavigate()
     const [searchQuery, setSearchQuery] = useState("")
-    const [isLoading, setLoading] = useState(false)
+    const [isLoading, setLoading] = useState(true)
     const [courses, setCourses] = useState<Course[]>([])
 
     const filteredCourses = courses.filter(course =>
@@ -23,21 +23,30 @@ export default function Popup() {
     )
 
     useEffect(() => {
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.user?.id) {
-                fetchCourses(session.user.id)
+        const init = async () => {
+            try {
+                const { data } = await authClient.getSession()
+
+                if (data?.user?.id) {
+                    await fetchCourses(data.user.id)
+                } else {
+                    navigate("/signin")
+                }
+            } catch (error) {
+                console.error("Session check failed:", error)
+                navigate("/signin")
             }
-        })()
-    }, [])
+        }
+        init()
+    }, [navigate])
 
     const fetchCourses = async (userId: string): Promise<void> => {
-        setLoading(true)
         try {
             const { data, error } = await supabase
                 .from("courses")
                 .select("id, title, description, icon, baseUrl")
                 .eq("user_id", userId)
+
             if (error) throw error
             setCourses(data || [])
         } catch (error) {
@@ -57,15 +66,22 @@ export default function Popup() {
             setTimeout(() => {
                 window.close()
             }, 500)
-        } catch (error: any) { }
+        } catch (error: any) {
+            console.error(error)
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="h-[500px] flex items-center justify-center bg-white dark:bg-gray-900">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        )
     }
 
     return (
-        // CHANGE 1: Used 'flex flex-col' and 'gap-4' instead of space-y-4
-        // 'h-[500px]' fixes the height, flex manages the internal layout
-        <div className="flex flex-col h-[500px] p-3 gap-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+        <div className="flex flex-col h-[500px] p-3 gap-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
 
-            {/* Header Section (Static) */}
             <div className="flex-none">
                 <div className="flex items-center justify-between text-gray-900 dark:text-white mb-4">
                     <h3 className="text-xl font-semibold">Guides</h3>
@@ -84,39 +100,38 @@ export default function Popup() {
                         placeholder="Search Guides..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-100 text-gray-900 rounded-md focus:border-indigo-500 focus:outline-none dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:focus:border-green-500"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-100 text-gray-900 rounded-md focus:border-indigo-500 focus:outline-none dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:focus:border-indigo-500"
                     />
                 </div>
             </div>
 
-            {/* CHANGE 2: Scrollable List Area 
-                - flex-1: Takes up all remaining space
-                - overflow-y-auto: Adds scrollbar if content overflows
-                - min-h-0: Prevents flex items from overflowing their container
-            */}
             <ul className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
-                {isLoading ? (
-                    <Loading />
-                ) : filteredCourses.length > 0 ? (
+                {filteredCourses.length > 0 ? (
                     filteredCourses.map((course) => (
                         <motion.li
                             key={course.id}
-                            whileHover={{ scale: 1.02 }}
                             className="cursor-pointer"
                             onClick={() => navigate("/course", { state: course })}
                         >
-                            <div className="p-2 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 transition-colors dark:bg-gray-800 dark:hover:bg-gray-700">
-                                <img
-                                    src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${course.icon}`}
-                                    alt=""
-                                    className="w-16 rounded-md object-cover"
-                                />
-                                <div>
-                                    <h4 className="font-medium text-lg text-gray-900 dark:text-white">
+                            <div className="p-2 flex items-center gap-3 rounded-lg border border-transparent bg-gray-50 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm transition-all duration-200 active:scale-[0.99] cursor-pointer group">
+
+                                {course.icon ? (
+                                    <img
+                                        src={`https://jyvyidejcnalevvtoxeg.supabase.co/storage/v1/object/public/images/${course.icon}`}
+                                        alt=""
+                                        className="w-16 h-16 rounded-md object-cover flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                        <Map className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-lg text-gray-900 dark:text-white truncate">
                                         {course.title}
                                     </h4>
-                                    <p className="text-gray-500 line-clamp-2 dark:text-gray-400 text-sm">
-                                        {course.description}
+                                    <p className="text-gray-500 truncate dark:text-gray-400 text-xs">
+                                        {course.baseUrl}
                                     </p>
                                 </div>
                             </div>
@@ -129,9 +144,6 @@ export default function Popup() {
                 )}
             </ul>
 
-            {/* CHANGE 3: Footer Button (Static at bottom) 
-                Since the UL above has flex-1, this stays anchored at the bottom
-            */}
             <div className="flex-none pt-2">
                 <motion.button
                     whileHover={{ scale: 1.02 }}

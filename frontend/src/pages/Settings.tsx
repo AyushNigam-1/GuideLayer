@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
-import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon } from "lucide-react"
-import { supabase } from "../config/supabase"
+import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { authClient } from "../lib/auth-client"
 
 interface UserProfile {
     name: string
@@ -54,11 +54,10 @@ const Button: React.FC<ButtonProps> = ({ Icon, label, active, onClick }) => {
     return (
         <button
             onClick={() => onClick(label)}
-            // Inactive state uses explicit light (default) and dark variants
             className={`p-3 w-full rounded-lg transition-all flex items-center justify-center border-2 
                 ${isActive
-                    ? "bg-indigo-500 text-white border-indigo-500 shadow-md" // Active state
-                    : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600" // Inactive state
+                    ? "bg-indigo-500 text-white border-indigo-500 shadow-md"
+                    : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 }`}
         >
             <Icon className="w-5 h-5" />
@@ -87,28 +86,27 @@ export default function Settings() {
 
     const handleLogout = async () => {
         try {
-            await supabase.auth.signOut()
-            await chrome.storage.local.remove("supabaseSession")
-            window.close()
+            await authClient.signOut()
+            nav("/")
         } catch (e) {
             console.error("Logout failed:", e)
         }
     }
 
-
     // Load saved themes + user
     useEffect(() => {
         const loadUser = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (session?.user) {
+                const { data, error } = await authClient.getSession()
+
+                if (data?.user) {
                     setUser({
-                        name: session.user.user_metadata.full_name ||
-                            session.user.email?.split("@")[0] ||
-                            "User",
-                        email: session.user.email || "",
-                        avatar: session.user.user_metadata.avatar_url
+                        name: data.user.name || data.user.email.split("@")[0] || "User",
+                        email: data.user.email,
+                        avatar: data.user.image || undefined
                     })
+                } else if (error) {
+                    console.error("Session error:", error)
                 }
             } catch (e) {
                 console.error("Failed to load session:", e)
@@ -141,18 +139,20 @@ export default function Settings() {
     }, [popupTheme])
 
     if (loading) {
-        return <div className="p-8 text-center bg-white text-gray-900 dark:bg-gray-900 dark:text-white">Loading...</div>
+        return (
+            <div className="h-[500px] flex items-center justify-center bg-white dark:bg-gray-900">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        )
     }
 
     return (
-        // Main container sets the default light theme and dark variant overrides
-        <div className="p-3 space-y-3 h-[500px]  bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
+        <div className="p-3 space-y-3 h-[500px] bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]">
 
             <div className="flex items-center justify-between text-gray-900 dark:text-white ">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => nav(-1)}
-                        // Button styling: Light default, Dark overrides
                         className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                     >
                         <ChevronLeft size="16" />
@@ -167,27 +167,22 @@ export default function Settings() {
                 </button>
             </div>
 
-
             {/* User Profile */}
-            <div
-                className="p-4 bg-gray-100 dark:bg-gray-800  flex gap-4 rounded-lg items-center"
-            >
-                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold">
+            <div className="p-4 bg-gray-100 dark:bg-gray-800 flex gap-4 rounded-lg items-center">
+                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold bg-white dark:bg-gray-700 shadow-sm">
                     {user?.avatar ? (
                         <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                         <User className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
                     )}
                 </div>
-                <div className="space-y-1 text-left">
-                    <h2 className="text-lg font-bold">{user?.name || "Guest User"}</h2>
+                <div className="space-y-1 text-left overflow-hidden">
+                    <h2 className="text-lg font-bold truncate">{user?.name || "Guest User"}</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user?.email || "Not logged in"}</p>
                 </div>
             </div>
 
-            <div
-                className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700"
-            >
+            <div className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
                 <div className="mb-2">
                     <p className="font-medium text-lg">Extension Theme</p>
                     <p className="text-gray-500 text-sm dark:text-gray-400">Changes extension popup appearance</p>
@@ -199,9 +194,7 @@ export default function Settings() {
                 </div>
             </div>
 
-            <div
-                className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50  dark:border-gray-700"
-            >
+            <div className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
                 <div className="mb-2">
                     <p className="font-medium text-lg">Guide Theme</p>
                     <p className="text-gray-500 text-sm dark:text-gray-400">Changes guides popups appearance</p>
@@ -212,21 +205,6 @@ export default function Settings() {
                     <Button Icon={Moon} label="dark" active={uiTheme} onClick={handleSetUiTheme} />
                 </div>
             </div>
-
-            {/* Divider */}
-            {/* <div className="h-0.5 w-full bg-gray-200 dark:bg-white/5" /> */}
-
-            {/* Logout */}
-            {/* <div>
-                <button
-                    
-                    // Retains solid red for both themes, uses white text
-                    className="w-full py-3 text-red-600 hover:bg-red-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-all bg-white/5 text-base"
-                >
-                    <LogOut className="size-4" />
-                    Logout
-                </button>
-            </div> */}
         </div>
     )
 }

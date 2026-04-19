@@ -1,17 +1,19 @@
 import { RouteObject } from "react-router-dom"
-import Home from "./pages/Home"  // Import components here
+import Home from "./pages/Home"
 import Course from "./pages/Course"
 import Settings from "./pages/Settings"
 import Layout from "./Layout"
-import SupabaseAuth from "./pages/Auth"
+import Signin from "./pages/Signin"
+import Signup from "./pages/Signup"
 
 export const routes: RouteObject[] = [
     {
         path: "/",
         element: <Layout />,
         children: [
-            { index: true, element: <SupabaseAuth /> },
-            { path: "/home", element: <Home /> },
+            { index: true, element: <Home /> },
+            { path: "/signup", element: <Signup /> },
+            { path: "/signin", element: <Signin /> },
             { path: "/course", element: <Course /> },
             { path: "/settings", element: <Settings /> }
         ],

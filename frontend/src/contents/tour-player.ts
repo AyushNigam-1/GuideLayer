@@ -5,10 +5,9 @@ import { supabase } from "../config/supabase"
 import { Step } from "../types"
 import "../../css/pro-theme.css"
 
-// 1. PLASMO CONFIG
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"],
-    run_at: "document_idle" // Wait for page to be ready
+    run_at: "document_idle"
 }
 
 
@@ -19,7 +18,105 @@ interface TourState {
     isPendingResume: boolean
 }
 
-// 3. STORAGE UTILS (Uses localStorage to persist data across reloads)
+function showWrongSiteWarning(correctUrl: string) {
+    document.querySelector("#guide-layer-wrong-site")?.remove()
+    const warning = document.createElement("div")
+    warning.id = "guide-layer-wrong-site"
+
+    const redirectUrl = correctUrl.startsWith('http') ? correctUrl : `https://${correctUrl}`;
+
+    warning.innerHTML = `
+   <div class="custom-popup" style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999999;
+      background: rgb(17 24 39);
+      color: white;
+      padding: 30px 24px 24px 24px;
+      border-radius: 16px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+      font-family: 'Inter', system-ui, sans-serif;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 0.3s ease-out;
+    ">
+      <div style="color: #ef4444; font-size: 40px; line-height: 1; margin-bottom: 10px;">
+        &#9888; 
+      </div>
+      
+      <div style="font-size: 24px; font-weight: 700; margin-bottom: 8px; color: white;">
+        Wrong Website!
+      </div>
+      
+      <p style="margin: 12px 0 20px 0; font-size: 15px; line-height: 1.5; color: #d1d5db;">
+        This guide is intended for:<br>
+        <strong style="color: white; font-weight: 600;">${correctUrl}</strong><br><br>
+        You're currently on: <br>
+        <strong style="color: #ef4444; font-weight: 600;">${window.location.hostname}</strong>
+      </p>
+      
+      <button id="guide-layer-redirect-btn" style="
+        width: 100%;
+        background: rgb(37 99 235);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display:flex;
+        justify-content:center;
+        gap:6px;
+        transition: background 0.2s, box-shadow 0.2s;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+        </svg>
+        Go to Correct Site
+      </button>
+      
+      <button id="guide-layer-continue-anyway" style="
+        background: transparent;
+        border: none;
+        color: #9ca3af;
+        margin-top: 10px;
+        padding: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: color 0.2s;">
+        Continue Anyway 
+      </button>
+    </div>
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translate(-50%, -60%); }
+        to { opacity: 1; transform: translate(-50%, -50%); }
+      }
+    </style>
+  `
+
+    document.body.appendChild(warning)
+
+    document.getElementById("guide-layer-redirect-btn")?.addEventListener("click", () => {
+        window.location.href = redirectUrl;
+    })
+    document.getElementById("guide-layer-continue-anyway")?.addEventListener("click", () => {
+        warning.remove()
+    })
+
+    setTimeout(() => {
+        if (document.body.contains(warning)) {
+            warning.style.transition = "all 0.5s"
+            warning.style.transform = "translate(-50%, -70%)"
+            warning.style.opacity = "0"
+            setTimeout(() => warning.remove(), 500)
+        }
+    }, 10000)
+}
+
 const STORAGE_KEY = "PLASMO_TOUR_STATE"
 
 const getTourState = (): TourState | null => {
@@ -89,8 +186,7 @@ const closeTourWithAnimation = () => {
         clearTourState();
     }
 }
-// 4. UTILITY: WAIT FOR ELEMENT
-// This waits for the element to actually exist in the DOM before showing the step
+
 const waitForElement = (selector: string, timeout = 10000): Promise<Element> => {
     return new Promise((resolve, reject) => {
         const el = document.querySelector(selector)
@@ -113,10 +209,8 @@ const waitForElement = (selector: string, timeout = 10000): Promise<Element> => 
     })
 }
 
-// 5. GLOBAL DRIVER INSTANCE
 let driverObj: Driver | null = null
 
-// 6. MAIN FUNCTION: START OR RESUME TOUR
 const startOrResumeTour = async (
     steps: Step[],
     startIndex: number = 0,
@@ -129,13 +223,11 @@ const startOrResumeTour = async (
         const isActionRequired = step.click_required || step.input_required
         const classList = []
 
-        // ✅ FIX: Explicitly define the type here
         let visibleButtons: ("next" | "previous" | "close")[] = ["next", "previous"]
         if (isFirstStep) {
             visibleButtons = ["next"]
             classList.push("driver-popover-first-step")
         }
-
 
         if (isLastStep) classList.push("driver-popover-last-step")
         if (isActionRequired) classList.push("driver-step-action-required")
@@ -143,13 +235,12 @@ const startOrResumeTour = async (
             element: step.element,
             popover: {
                 title: `Step ${step.order_index + 1}`,
-                description: html(step.text, step.file), // Ensure you use your helper name here
+                description: html(step.text, step.file),
                 side: step.on || "bottom",
                 align: 'start',
                 popoverClass: classList.join(" "),
                 doneBtnText: isLastStep ? "Done" : "Next",
 
-                // Now this matches the expected type
                 showButtons: visibleButtons,
                 onNextClick: isLastStep
                     ? () => {
@@ -368,13 +459,21 @@ const checkAndResumeTour = async () => {
     }
 }
 
-// Execute auto-resume immediately
 checkAndResumeTour()
 
-// 9. MESSAGE LISTENER (Entry point from Popup)
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     if (request.action === "startTour" && request.courseId) {
+        if (request.baseUrl) {
+            const currentHost = window.location.hostname.replace(/^www\./, '');
+            const targetHost = request.baseUrl.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
 
+            if (currentHost !== targetHost && targetHost !== "") {
+                console.warn(`[Tour Player] Wrong site. Expected: ${targetHost}, Current: ${currentHost}`);
+                showWrongSiteWarning(request.baseUrl);
+                sendResponse({ success: false, error: "Wrong website" });
+                return true;
+            }
+        }
         const handleStart = async () => {
             try {
                 console.log("Fetching steps for:", request.courseId)
