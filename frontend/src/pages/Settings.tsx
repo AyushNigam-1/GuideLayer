@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from "react"
-import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, LucideIcon, Loader2 } from "lucide-react"
+import { Moon, Sun, LogOut, User, Monitor, ChevronLeft, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { authClient } from "../lib/auth-client"
+import { ButtonProps, ThemeValue, UserProfile } from "../types"
 
-interface UserProfile {
-    name: string
-    email: string
-    avatar?: string
-}
-
-type ThemeValue = "light" | "dark" | "system"
-
-// ---------- THEME STORAGE ----------
 const saveTheme = (key: string, value: ThemeValue) => {
     if (typeof chrome !== "undefined" && chrome.storage?.sync) {
         chrome.storage.sync.set({ [key]: value }, () =>
@@ -22,7 +14,6 @@ const saveTheme = (key: string, value: ThemeValue) => {
     }
 }
 
-// ---------- APPLY TAILWIND THEME ----------
 const applyTheme = (theme: ThemeValue) => {
     const root = document.documentElement
 
@@ -40,13 +31,7 @@ const applyTheme = (theme: ThemeValue) => {
     root.classList.toggle("dark", prefersDark)
 }
 
-// ---------- BUTTON ----------
-interface ButtonProps {
-    Icon: LucideIcon
-    label: ThemeValue
-    active: ThemeValue
-    onClick: (theme: ThemeValue) => void
-}
+
 
 const Button: React.FC<ButtonProps> = ({ Icon, label, active, onClick }) => {
     const isActive = label === active
@@ -157,7 +142,7 @@ export default function Settings() {
                     >
                         <ChevronLeft size="16" />
                     </button>
-                    <h3 className="text-xl font-semibold">Settings</h3>
+                    <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-200">Settings</h3>
                 </div>
                 <button
                     className="rounded-full flex items-center gap-3 font-semibold transition-colors text-red-500"
@@ -177,15 +162,15 @@ export default function Settings() {
                     )}
                 </div>
                 <div className="space-y-1 text-left overflow-hidden">
-                    <h2 className="text-lg font-bold truncate">{user?.name || "Guest User"}</h2>
+                    <h2 className="text-lg font-bold truncate text-gray-600 dark:text-gray-200">{user?.name || "Guest User"}</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user?.email || "Not logged in"}</p>
                 </div>
             </div>
 
             <div className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
                 <div className="mb-2">
-                    <p className="font-medium text-lg">Extension Theme</p>
-                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes extension popup appearance</p>
+                    <p className="text-base text-gray-600 font-semibold dark:text-gray-200">Extension Theme</p>
+                    <p className="text-gray-500 text-xs dark:text-gray-400">Changes extension popup appearance</p>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <Button Icon={Sun} label="light" active={popupTheme} onClick={handleSetPopupTheme} />
@@ -196,8 +181,8 @@ export default function Settings() {
 
             <div className="flex flex-col rounded-xl gap-2 p-4 bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
                 <div className="mb-2">
-                    <p className="font-medium text-lg">Guide Theme</p>
-                    <p className="text-gray-500 text-sm dark:text-gray-400">Changes guides popups appearance</p>
+                    <p className="text-base text-gray-600 font-semibold dark:text-gray-200">Guide Theme</p>
+                    <p className="text-gray-500 text-xs dark:text-gray-400">Changes guides popups appearance</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button Icon={Sun} label="light" active={uiTheme} onClick={handleSetUiTheme} />

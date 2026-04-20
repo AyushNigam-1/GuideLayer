@@ -1,7 +1,9 @@
+import { LucideIcon } from "lucide-react";
 import { StepOptions } from "shepherd.js";
 
 export type Placement = 'top' | 'right' | 'bottom' | 'left';
 export type ThemeValue = "light" | "dark" | "system"
+export type MediaType = 'file' | 'icon' | 'audio'
 
 export interface Step {
     id?: number;
@@ -42,7 +44,6 @@ export interface StepData {
     id: string,
     title: string,
     steps: Step[]
-    // buttonText and complex text array handling omitted for UI simplicity
 }
 
 export type Message = { action: "startTour" | "openCreator" | "fetchCourses", courseId?: string, baseUrl: string } // 🛑 Update Message type
@@ -55,4 +56,31 @@ export interface Course {
     icon: string,
     baseUrl: string
 }
-export type MediaType = 'file' | 'icon' | 'audio'  // adjust as needed
+
+export interface UserProfile {
+    name: string
+    email: string
+    avatar?: string
+}
+
+export interface ButtonProps {
+    Icon: LucideIcon
+    label: ThemeValue
+    active: ThemeValue
+    onClick: (theme: ThemeValue) => void
+}
+
+export interface CourseMetadata {
+    id?: number;
+    title: string;
+    description: string;
+    icon: string,
+    baseUrl: string
+}
+
+export interface EmbedRowProps {
+    label: string;
+    icon: React.ReactNode;
+    code: string;
+    accent: string;
+}

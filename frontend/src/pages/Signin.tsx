@@ -62,11 +62,11 @@ export default function Signin() {
         <div className="bg-white dark:bg-gray-900 space-y-3 text-gray-900 dark:text-white flex flex-col p-3 min-w-[300px]">
 
             <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-200">
                     GuideLayer
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-                    Sign in to create your tour
+                    Signin to create your tour
                 </p>
             </div>
 

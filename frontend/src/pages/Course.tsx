@@ -1,8 +1,9 @@
-import { ChevronLeft, Pencil, Play, Trash2, Loader2, Map, Copy, Check, Braces, Code2 } from "lucide-react";
+import { ChevronLeft, Pencil, Play, Trash2, Loader2, Map, Copy, Check } from "lucide-react";
 import { PlasmoCSConfig } from "plasmo";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom"
 import { supabase } from "../config/supabase";
+import { CourseMetadata } from "../types";
 
 export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]
@@ -13,11 +14,17 @@ const Course = () => {
     const [isLoading, setLoading] = useState<boolean>(false)
     const [isDeleting, setDeleting] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
+    const [copied, setCopied] = useState(false);
 
     const { state } = useLocation()
-    const data = state as { id: number; title: string; description: string; icon: string, baseUrl: string } | null
-    const cssLink = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@main/pro-theme.css" />`;
+    const data = state as CourseMetadata | null
     const jsScript = `<script src="https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@main/guidelayer-embed.js" data-course-id="${data?.id}" defer></script>`;
+
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(jsScript);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const handleStartTour = async () => {
         console.log(data?.baseUrl)
@@ -90,21 +97,20 @@ const Course = () => {
     return (
         <div className="flex flex-col h-[500px] p-3 gap-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-white min-w-[300px]" >
 
-            {/* Header and Back Button */}
             <div className="flex-none flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => nav(-1)}
-                        className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                        className="p-1 bg-gray-100 rounded-md flex items-center gap-3 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors "
                     >
                         <ChevronLeft size="16" />
                     </button>
-                    <h3 className="text-xl font-semibold">Guide Overview</h3>
+                    <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-200">Overview</h3>
                 </div>
                 <button
                     onClick={handleDelete}
                     disabled={isLoading}
-                    className="p-1 rounded-full flex items-center justify-center w-8 h-8 hover:bg-gray-200 hover:text-red-400 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="p-1 rounded-full flex items-center justify-center w-8 h-8 hover:bg-gray-200 hover:text-red-400 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 text-gray-600 dark:text-gray-200"
                     title="Delete Guide"
                 >
                     {(isLoading && isDeleting) ? <Loader2 className="w-4 h-4 animate-spin text-red-500" /> : <Trash2 size={18} />}
@@ -126,7 +132,7 @@ const Course = () => {
                     )}
 
                     <div className="text-left flex-1 min-w-0">
-                        <h3 className="text-lg font-bold truncate">
+                        <h3 className="text-lg font-bold truncate text-gray-600 dark:text-gray-200">
                             {data?.title}
                         </h3>
                         <h4 className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -136,10 +142,7 @@ const Course = () => {
                 </div>
             </div>
 
-            {/* Scrollable Main Area (Description + Embed) */}
-            <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-5 custom-scrollbar">
-
-                {/* Description Area */}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2 space-y-5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full">
                 {data?.description && (
                     <div>
                         <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
@@ -151,42 +154,55 @@ const Course = () => {
                     </div>
                 )}
 
-                {/* Embed Area */}
                 <div className="space-y-2.5">
-                    {/* Section heading */}
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                        Embed on your site
-                    </h4>
+                    <div className="space-y-1.5">
+                        <div className="group flex items-stretch gap-0 rounded-lg border border-gray-200 dark:border-gray-700/60 bg-gray-100 dark:bg-gray-900/70 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500/60 overflow-hidden ring-2 ring-transparent transition-all duration-200">
+                            <input
+                                readOnly
+                                value={jsScript}
+                                className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-xs font-mono text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 dark:bg-white/5 outline-none select-all cursor-text"
+                                onFocus={(e) => e.target.select()}
+                                aria-label="JavaScript embed snippet"
+                            />
+                            <span className="self-center h-5 w-px bg-gray-200 dark:bg-gray-700/60 shrink-0" />
+                            <button
+                                onClick={handleCopy}
+                                className={`flex items-center justify-center gap-1.5 px-3 shrink-0 text-[11px] dark:bg-white/5 font-medium transition-all duration-150 ${copied ? "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-500/10" : "text-gray-500 dark:text-gray-400 hover:text-amber-600 hover:bg-amber-100 dark:hover:text-amber-400 dark:hover:bg-amber-500/10"}`}
+                                title="Copy JavaScript snippet"
+                            >
+                                {copied ? <Check size={12} strokeWidth={2.5} /> : <Copy size={12} strokeWidth={2} />}
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pt-0.5">
+                            - Paste this snippet right before your closing{" "}
+                            <code className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 font-mono text-gray-600 dark:text-gray-400">
+                                &lt;/body&gt;
+                            </code>{" "}
+                            tag.
+                        </p>
+                    </div>
 
-                    {/* CSS row */}
-                    <EmbedRow
-                        label="CSS"
-                        icon={<Code2 size={11} strokeWidth={2.5} />}
-                        code={cssLink}
-                        accent="sky"
-                    />
+                    <hr className="border-gray-100 dark:border-white/5" />
 
-                    {/* JS row */}
-                    <EmbedRow
-                        label="JavaScript"
-                        icon={<Braces size={11} strokeWidth={2.5} />}
-                        code={jsScript}
-                        accent="amber"
-                    />
+                    <div className="mt-5 space-y-2">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                            The script exposes a global object. You can trigger the tour from any button click on your website using:
+                        </p>
+                        <code className="block w-full bg-gray-100 dark:bg-white/5 px-2 py-1.5 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs text-indigo-600 dark:text-indigo-300 select-all cursor-text">
+                            window.GuideLayer.start()
+                        </code>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed pt-1">
+                            You can also force a specific theme instead of relying on the system default:
+                        </p>
+                        <code className="block w-full bg-gray-100 dark:bg-white/5 px-2 py-1.5 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs text-indigo-600 dark:text-indigo-300 select-all cursor-text">
+                            window.GuideLayer.setTheme('dark')
+                        </code>
+                    </div>
 
-                    {/* Footer hint */}
-                    <p className="text-[10.5px] text-gray-500 leading-relaxed pt-0.5">
-                        Paste both before your closing{" "}
-                        <code className="rounded bg-gray-800 px-1 py-0.5 font-mono text-gray-400">
-                            &lt;/head&gt;
-                        </code>{" "}
-                        tag.
-                    </p>
                 </div>
 
             </div>
 
-            {/* Footer Buttons */}
             <div className="flex-none flex flex-col gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
                 <button
                     onClick={handleUpdate}
@@ -194,7 +210,7 @@ const Course = () => {
                     className="w-full flex items-center py-2 justify-center bg-indigo-500 text-white rounded-lg font-semibold shadow-md hover:bg-indigo-600 transition-colors disabled:opacity-50"
                 >
                     {(isLoading && isEditing) ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                         <span className="flex items-center gap-2 justify-center">
                             <Pencil size={16} />
@@ -209,7 +225,7 @@ const Course = () => {
                     disabled={isLoading}
                 >
                     {(isLoading && !isDeleting && !isEditing) ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                         <span className="flex items-center gap-2 justify-center">
                             <Play size={16} />
@@ -223,104 +239,3 @@ const Course = () => {
 }
 
 export default Course
-
-interface EmbedRowProps {
-    label: string;
-    icon: React.ReactNode;
-    code: string;
-    accent: string; // tailwind color name, e.g. "sky" | "violet"
-}
-
-// ── sub-component ──────────────────────────────────────────────────────────
-function EmbedRow({ label, icon, code, accent }: EmbedRowProps) {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = async () => {
-        await navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const accentMap: Record<string, { ring: string; bg: string; text: string; dot: string }> = {
-        sky: {
-            ring: "focus-within:ring-sky-500/40 bg-white/5 focus-within:border-sky-500/60",
-            bg: "bg-sky-500/10",
-            text: "text-sky-400",
-            dot: "bg-sky-400",
-        },
-        amber: {
-            ring: "focus-within:ring-amber-500/40 bg-white/5 focus-within:border-amber-500/60",
-            bg: "bg-amber-500/10",
-            text: "text-amber-400",
-            dot: "bg-amber-400",
-        },
-    };
-
-    const c = accentMap[accent] ?? accentMap.sky;
-
-    return (
-        <div className="space-y-1.5">
-            {/* Label row */}
-            <div className="flex items-center gap-1.5">
-                <span className={`${c.text} flex items-center`}>{icon}</span>
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-                    {label}
-                </span>
-                <span className={`ml-auto h-1.5 w-1.5 rounded-full ${c.dot} opacity-70`} />
-            </div>
-
-            {/* Input row */}
-            <div
-                className={`
-          group flex items-center gap-0
-          rounded-lg border border-gray-700/60 bg-gray-900/70
-          ring-2 ring-transparent transition-all duration-200
-          ${c.ring}
-          overflow-hidden
-        `}
-            >
-                {/* Monospace read-only input */}
-                <input
-                    readOnly
-                    value={code}
-                    className="
-            flex-1 min-w-0 px-3 py-2.5
-            bg-transparent text-[11.5px] font-mono text-gray-300
-            placeholder-gray-600 outline-none
-            select-all cursor-text
-          "
-                    onFocus={(e) => e.target.select()}
-                    aria-label={`${label} embed snippet`}
-                />
-
-                {/* Divider */}
-                <span className="h-5 w-px bg-gray-700/60 shrink-0" />
-
-                {/* Copy button */}
-                <button
-                    onClick={handleCopy}
-                    className={`
-            flex items-center gap-1.5 px-3 py-2.5 shrink-0
-            text-[11px] font-medium
-            transition-all duration-150
-            ${copied
-                            ? "text-green-400 bg-green-500/10"
-                            : `text-gray-400 hover:${c.text} hover:${c.bg}`
-                        }
-          `}
-                    title={`Copy ${label} snippet`}
-                >
-                    {copied ? (
-                        <>
-                            <Check size={12} strokeWidth={2.5} />
-                        </>
-                    ) : (
-                        <>
-                            <Copy size={12} strokeWidth={2} />
-                        </>
-                    )}
-                </button>
-            </div>
-        </div>
-    );
-}

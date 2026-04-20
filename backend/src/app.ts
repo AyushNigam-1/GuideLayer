@@ -1,13 +1,13 @@
 import express from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
-import llmRoutes from "./routes/llmRoutes";
-import vectorRoutes from "./routes/vectorRoutes";
-import { errorHandler } from "./middleware/errorHanlder";
 import { auth } from "./auth";
+import dotenv from "dotenv";
 
+dotenv.config();
 const app = express();
 
+app.use(express.json());
 app.use(
     cors({
         origin: ["chrome-extension://ibmlpgeggepeaaiincekmiojeljnacei"],
@@ -24,8 +24,7 @@ app.get("/auth-success", (req, res) => {
                     <p>You are now authenticated. You can safely close this tab and return to the GuideLayer extension.</p>
                 </div>
                 <script>
-                    // Attempt to auto-close the tab 
-                    setTimeout(() => { window.close(); }, 1500);
+                    setTimeout(() => { window.close(); }, 3500);
                 </script>
             </body>
         </html>
@@ -33,11 +32,8 @@ app.get("/auth-success", (req, res) => {
 });
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
-app.use(express.json());
 
-app.use("/api", llmRoutes);
-app.use("/api", vectorRoutes);
-
-app.use(errorHandler);
-
-export default app;
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});

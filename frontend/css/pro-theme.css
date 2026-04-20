@@ -55,12 +55,12 @@
     /* Remove default gap */
 }
 
-/* 3. SHARED BUTTON STYLES (Round Shape) */
 .driver-popover-footer button {
-    width: 44px !important;
-    height: 44px !important;
+    width: 34px !important;
+    /* Reduced from 44px */
+    height: 34px !important;
+    /* Reduced from 44px */
     border-radius: 50% !important;
-    /* Perfect Circle */
     padding: 0 !important;
 
     display: flex !important;
@@ -70,7 +70,7 @@
     background-color: transparent !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
-    background-size: 20px !important;
+    background-size: 16px !important;
 
     /* Hide Text */
     color: transparent !important;
@@ -96,19 +96,16 @@
     border-color: #bac2de !important;
 }
 
-/* 5. NEXT BUTTON (Right Arrow) */
 .driver-popover-next-btn {
-    background-color: #89b4fa !important;
-    /* Blue */
-    border: none !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%231e1e2e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") !important;
-    /* Ensure it stays on the right */
+    background-color: transparent !important;
+    border: 1px solid #45475a !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") !important;
     order: 2 !important;
 }
 
 .driver-popover-next-btn:hover {
-    transform: scale(1.05) !important;
-    background-color: #b4befe !important;
+    background-color: #313244 !important;
+    border-color: #bac2de !important;
 }
 
 /* 6. DONE BUTTON (Specific Style) */
@@ -217,29 +214,82 @@
 }
 
 .driver-popover-next-btn.driver-btn-disabled {
-    /* 1. Make the background visible but dark */
     background-color: #313244 !important;
     border: 1px solid #585b70 !important;
-    /* Brighter border to ensure visibility */
-
-    /* 2. CRITICAL: Switch to a WHITE icon so it shows up on dark background */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23bac2de' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") !important;
-
-    /* 3. Styling adjustments */
     opacity: 1 !important;
-    /* Keep opacity high so we can see the border */
     cursor: not-allowed !important;
-    pointer-events: none !important;
     box-shadow: none !important;
     transform: none !important;
+    pointer-events: auto !important;
+    position: relative !important;
 }
 
-/* Hover Effect */
+/* --- THE TOOLTIP BUBBLE --- */
+.driver-popover-next-btn.driver-btn-disabled::before {
+    content: attr(data-tooltip) !important;
+    position: absolute !important;
+    bottom: 140% !important;
+    /* Pushed slightly higher */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+
+    background-color: #111827 !important;
+    color: #ffffff !important;
+    /* Brighter text */
+
+    /* CRITICAL: Overriding the parent button's zeroed values */
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    line-height: normal !important;
+    font-weight: 500 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: normal !important;
+
+    /* CRITICAL: Stops it from squishing into the 34px button width */
+    white-space: nowrap !important;
+    width: max-content !important;
+
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+
+    /* Leave these without !important so the hover transition works */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* --- THE TOOLTIP ARROW --- */
+.driver-popover-next-btn.driver-btn-disabled::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 110% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    border-width: 6px !important;
+    border-style: solid !important;
+    border-color: #111827 transparent transparent transparent !important;
+    pointer-events: none !important;
+    z-index: 1001 !important;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.driver-popover-next-btn.driver-btn-disabled:hover::before,
+.driver-popover-next-btn.driver-btn-disabled:hover::after {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
 .driver-close-btn:hover {
     opacity: 1 !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
     color: #ffffff !important;
-    /* Turns bright white */
 }
 
 .driver-popover-first-step .driver-popover-footer {
@@ -279,13 +329,85 @@
     color: #111827;
 }
 
-/* DARK MODE */
-body.guidelayer-theme-dark .driver-popover {
-    background-color: #111827;
-    color: #ffffff;
+.driver-popover.guidelayer-dark-mode {
+    background-color: #111827 !important;
+    /* Tailwind gray-900 */
+    color: #ffffff !important;
+    border: 1px solid #374151 !important;
+    /* Tailwind gray-700 */
 }
 
-body.guidelayer-theme-dark .driver-popover-next-btn {
-    background-color: #4f46e5;
-    color: white;
+.driver-popover.guidelayer-dark-mode .driver-popover-title {
+    color: #ffffff !important;
+}
+
+.driver-popover.guidelayer-dark-mode .driver-popover-description {
+    color: #9ca3af !important;
+    /* Tailwind gray-400 */
+}
+
+
+/* 1. ROUNDED MEDIA & SKELETON LOADER */
+.driver-media-wrapper {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+    /* Rounded container */
+    overflow: hidden !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    /* Sleek Skeleton Pulse Loader */
+    min-height: 120px !important;
+    /* Gives the loader space while downloading */
+    background: linear-gradient(90deg, rgba(120, 120, 120, 0.1) 25%, rgba(120, 120, 120, 0.2) 50%, rgba(120, 120, 120, 0.1) 75%) !important;
+    background-size: 200% 100% !important;
+    animation: driverSkeletonLoad 1.5s infinite linear !important;
+}
+
+@keyframes driverSkeletonLoad {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.driver-media-element {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 180px !important;
+    object-fit: contain !important;
+    display: block !important;
+    border-radius: 8px !important;
+    /* Rounded image/video corners */
+    position: relative !important;
+    z-index: 2 !important;
+    /* Puts image on top of the skeleton background */
+}
+
+/* 2. AUDIO PLAYER RE-STYLING */
+.driver-audio-wrapper {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    border-radius: 24px !important;
+    /* Sleek pill shape */
+    overflow: hidden !important;
+    /* Hides the ugly square browser corners */
+}
+
+.driver-audio-element {
+    height: 36px !important;
+    /* Slimmer profile than default */
+    width: 100% !important;
+    outline: none !important;
+}
+
+/* THE MAGIC TRICK: Invert the audio player colors for Dark Mode */
+.driver-popover.guidelayer-dark-mode .driver-audio-element {
+    /* Turns the bright white player into a sleek dark gray one */
+    filter: invert(0.85) grayscale(1) contrast(1.2) !important;
 }

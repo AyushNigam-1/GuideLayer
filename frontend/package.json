@@ -54,6 +54,8 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "name": "GuideLayer",
+    "displayName": "GuideLayer",
     "theme_color": "#0f172a",
     "oauth2": {
       "client_id": "943409999479-7sg6gvu0eh18goftnb0ad28bk934po0t.apps.googleusercontent.com",

@@ -220,7 +220,6 @@ const startOrResumeTour = async (
     const driverSteps: DriveStep[] = steps.map((step, index) => {
         const isFirstStep = index === 0
         const isLastStep = index === steps.length - 1
-        const isActionRequired = step.click_required || step.input_required
         const classList = []
 
         let visibleButtons: ("next" | "previous" | "close")[] = ["next", "previous"]
@@ -230,7 +229,11 @@ const startOrResumeTour = async (
         }
 
         if (isLastStep) classList.push("driver-popover-last-step")
-        if (isActionRequired) classList.push("driver-step-action-required")
+        if (step.click_required) {
+            classList.push("driver-step-click-required");
+        } else if (step.input_required) {
+            classList.push("driver-step-input-required");
+        }
         return {
             element: step.element,
             popover: {
@@ -251,16 +254,12 @@ const startOrResumeTour = async (
                     : () => driverObj?.moveNext()
             },
 
-            // ... your existing onHighlightStarted hook ...
             onHighlightStarted: (element) => {
                 if (!element) return
 
-                // 1. Handle Click Required
                 if (step.click_required) {
                     setupClickRequiredHandler(element, index, steps, courseId)
                 }
-
-                // 2. Handle Input Required (New)
                 else if (step.input_required && step.input) {
                     setupInputRequiredHandler(element, step.input, index, steps, courseId)
                 }
@@ -268,40 +267,38 @@ const startOrResumeTour = async (
         }
     })
 
-    // Initialize Driver
     driverObj = driver({
         showProgress: false,
         animate: true,
         disableActiveInteraction: false,
         allowClose: false,
-        steps: driverSteps, // Your mapped steps
-
-        // 👇 THIS IS THE CRITICAL PART YOU ARE MISSING
+        steps: driverSteps,
         onPopoverRender: (popover) => {
-
-            // 1. Logic for the Close (Cross) Button
             const closeBtn = document.querySelector(".driver-close-btn");
-            if (closeBtn) {
-                closeBtn.addEventListener("click", closeTourWithAnimation);
-            }
+            if (closeBtn) closeBtn.addEventListener("click", closeTourWithAnimation);
 
-            // 2. Logic for Disabling the Next Button
-            // We check if the current step wrapper has the "action-required" class
             const wrapper = popover.wrapper;
-            const isActionStep = wrapper.classList.contains("driver-step-action-required");
+            const isClickReq = wrapper.classList.contains("driver-step-click-required");
+            const isInputReq = wrapper.classList.contains("driver-step-input-required");
 
-            if (isActionStep) {
-                console.log("Action required: Disabling Next button..."); // Debug log
-
+            if (isClickReq || isInputReq) {
                 const nextBtn = document.querySelector(".driver-popover-next-btn");
                 if (nextBtn) {
-                    // Manually ADD the class that your CSS is looking for
                     nextBtn.classList.add("driver-btn-disabled");
-
-                    // Also set the HTML attribute for good measure
                     nextBtn.setAttribute("disabled", "true");
+
+                    const tooltipMsg = isClickReq
+                        ? "Click the highlighted element to continue"
+                        : "Type the required text to continue";
+
+                    nextBtn.setAttribute("data-tooltip", tooltipMsg);
                 }
             }
+
+            const isHostDark = document.documentElement.classList.contains('dark') ||
+                document.body.classList.contains('dark') ||
+                window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isHostDark) popover.wrapper.classList.add('guidelayer-dark-mode');
         },
 
         onDestroyStarted: () => {
@@ -358,15 +355,12 @@ const setupInputRequiredHandler = (
     const inputHandler = (e: Event) => {
         const userValue = (e.target as HTMLInputElement).value
 
-        // Check for Exact Match
         if (userValue === expectedText) {
             console.log("Input matched! Moving to next step...")
 
-            // A. Visual Feedback (Optional: Turn border green)
             inputEl.style.borderColor = "#4ade80"
             inputEl.style.transition = "border-color 0.3s ease"
 
-            // B. Save State (In case page reloads immediately after input)
             const nextIndex = currentIndex + 1
             if (nextIndex < steps.length) {
                 saveTourState({
@@ -411,10 +405,8 @@ const setupClickRequiredHandler = (
 ) => {
 
     const clickHandler = () => {
-        // 1. Calculate next step index
         const nextIndex = currentIndex + 1
 
-        // 2. If tour is done, clear everything
         if (nextIndex >= steps.length) {
             clearTourState()
             driverObj?.destroy()
@@ -423,21 +415,13 @@ const setupClickRequiredHandler = (
 
         console.log("Click detected. Saving state for Step:", nextIndex)
 
-        // 3. Save State: "We are pending resume at nextIndex"
         saveTourState({
             courseId,
             nextIndex,
             steps,
             isPendingResume: true
         })
-
-        // 4. Destroy Driver so the click can actually interact with the website
-        // (We rely on bubbling or simply allowing the event to pass through)
         driverObj?.destroy()
-
-        // 5. Handling SPA (Single Page Apps) vs Reloads
-        // If the page DOES reload, the script restarts and `checkAndResumeTour` picks it up.
-        // If the page DOES NOT reload (SPA), we need to manually resume after a delay.
         setTimeout(() => {
             const state = getTourState()
             if (state && state.isPendingResume) {

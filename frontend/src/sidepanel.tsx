@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, ChangeEvent } from "react"
 import { Wand2, X, Plus, Trash2, CheckSquare, Save, Loader2, CheckCircle2 } from "lucide-react"
 import "./index.css"
-import { MediaType, Step, ThemeValue } from "./types"
+import { CourseMetadata, MediaType, Step, ThemeValue } from "./types"
 import { supabase } from "./config/supabase"
 import Input from "./components/Input"
-import Loading from "./components/Loading"
 import FileUpload from "./components/FileUpload"
 import { authClient } from "./lib/auth-client"
 
@@ -12,20 +11,19 @@ const SidePanel = () => {
     const [isPicking, setIsPicking] = useState(false)
     const [isLoading, setLoading] = useState(false)
     const [isSuccess, setIsSuccess] = useState(false);
-    const [isUploading, setIsUploading] = useState<MediaType | null>(); // New state for image upload status
+    const [isUploading, setIsUploading] = useState<MediaType | null>();
     const [userId, setUserId] = useState("")
-    const [metadata, setMetadata] = useState<{ title: string, description: string, baseUrl: string, icon: string }>({ title: "", description: "", baseUrl: "", icon: "" })
+    const [metadata, setMetadata] = useState<CourseMetadata>({ title: "", description: "", baseUrl: "", icon: "" })
     const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
     const [courseId, setCourseId] = useState<string>()
     const [isDeleting, setDeleting] = useState<MediaType | null>()
-    // const [isInputRequired, setInputRequired] = useState<boolean>(false)
 
     const [steps, setSteps] = useState<Step[]>([{
         _id: 'step-1',
         text: 'Welcome! Start adding steps and saving your tour to your browser storage.',
         file: '',
         element: '',
-        on: 'right', // Set default placement
+        on: 'right',
         order_index: 0,
         audio: "",
         site_url: "",
@@ -344,12 +342,11 @@ const SidePanel = () => {
     const activeStep = steps[activeStepIndex];
     const currentPlacement = activeStep?.on || "right";
 
-    // Check if the initial steps array is just the default placeholder and we are still loading or have loaded nothing
     if (steps.length === 0 || (steps.length === 1 && steps[0]._id === 'step-1' && !courseId && !metadata.title)) {
         if (isLoading) {
             return (
                 <div className="p-4 flex flex-col h-full bg-gray-900 text-white items-center justify-center">
-                    <Loading />
+                    <Loader2 className="w-5 h-5 animate-spin text-white" />
                 </div>
             );
         }
@@ -458,15 +455,17 @@ const SidePanel = () => {
             <div className="mb-4">
                 <h2 className="text-lg font-semibold mb-2">Steps </h2>
                 <div
-                    className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-inner custom-scrollbar"
+                    className="max-h-32 overflow-y-auto space-y-2 p-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-inner 
+    scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 
+    hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded-full"
                 >
                     {steps.map((step, index) => (
                         <div
                             key={step._id}
-                            className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all 
-                                ${index === activeStepIndex
-                                    ? 'bg-indigo-100/40  dark:bg-indigo-900/40'
-                                    : 'bg-white hover:bg-gray-200 border border-transparent dark:bg-white/5 dark:hover:bg-gray-600'
+                            className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all outline-none focus:outline-none select-none border border-transparent
+        ${index === activeStepIndex
+                                    ? 'bg-indigo-100/40 dark:bg-indigo-900/40'
+                                    : 'bg-white hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-gray-600'
                                 }`}
                             onClick={() => { setActiveStep(index); console.log("index", index) }}
                         >
