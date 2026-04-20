@@ -47,7 +47,7 @@
     };
 
     injectCSS('https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css');
-    injectCSS('https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@master/frontend/css/pro-theme.css?v=99');
+    injectCSS('https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@master/frontend/css/theme.css');
 
     const loadScript = (src) => {
         return new Promise((resolve, reject) => {

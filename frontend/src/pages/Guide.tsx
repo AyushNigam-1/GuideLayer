@@ -9,7 +9,7 @@ export const config: PlasmoCSConfig = {
     matches: ["<all_urls>"]
 }
 
-const Course = () => {
+const Guide = () => {
     const nav = useNavigate()
     const [isLoading, setLoading] = useState<boolean>(false)
     const [isDeleting, setDeleting] = useState(false)
@@ -18,7 +18,7 @@ const Course = () => {
 
     const { state } = useLocation()
     const data = state as CourseMetadata | null
-    const jsScript = `<script src="https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@main/guidelayer-embed.js" data-course-id="${data?.id}" defer></script>`;
+    const jsScript = `<script src="https://cdn.jsdelivr.net/gh/AyushNigam-1/GuideLayer@master/frontend/src/contents/guidelayer-embed.js" data-course-id="${data?.id}" defer></script>`;
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(jsScript);
@@ -238,4 +238,4 @@ const Course = () => {
     )
 }
 
-export default Course
+export default Guide
